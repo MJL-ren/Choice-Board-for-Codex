@@ -35,11 +35,15 @@ UI_COPY_KEYS = {
     "otherTooLongError",
     "explanationTooLongError",
     "sending",
-    "sent",
+    "sent",  # Deprecated input key retained for schema-v1 compatibility.
+    "deliveryUnconfirmed",
+    "retrySame",
+    "changedAfterSend",
     "failed",
     "unavailable",
     "responseHeading",
     "explanationHeading",
+    "draftHeading",
 }
 
 
@@ -184,6 +188,57 @@ def normalize_spec(raw: Any) -> dict[str, Any]:
         for key, value in ui_copy_raw.items()
     }
 
+    question_by_id = {question["id"]: question for question in questions}
+    initial_answers_raw = raw.get("initial_answers", {})
+    if not isinstance(initial_answers_raw, dict):
+        raise SpecError("initial_answers must be an object")
+    unknown_initial_ids = sorted(set(initial_answers_raw) - set(question_by_id))
+    if unknown_initial_ids:
+        raise SpecError(f"unknown initial answer question ids: {', '.join(unknown_initial_ids)}")
+
+    initial_answers: dict[str, Any] = {}
+    for question_id, value in initial_answers_raw.items():
+        question = question_by_id[question_id]
+        field = f"initial_answers.{question_id}"
+        if question["type"] == "text":
+            if not isinstance(value, str) or len(value) > 4000:
+                raise SpecError(f"{field} must be a string of at most 4000 characters")
+            initial_answers[question_id] = value
+            continue
+
+        allowed_values = [option["value"] for option in question["options"]]
+        if question["allow_other"]:
+            allowed_values.append(OTHER_VALUE)
+        if question["type"] == "single":
+            if not isinstance(value, str) or (value and value not in allowed_values):
+                raise SpecError(f"{field} must be empty or a known option value")
+            initial_answers[question_id] = value
+            continue
+
+        if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+            raise SpecError(f"{field} must be an array of known option values")
+        if len(value) != len(set(value)) or any(item not in allowed_values for item in value):
+            raise SpecError(f"{field} must contain unique known option values")
+        selected = set(value)
+        initial_answers[question_id] = [item for item in allowed_values if item in selected]
+
+    initial_other_raw = raw.get("initial_other_answers", {})
+    if not isinstance(initial_other_raw, dict):
+        raise SpecError("initial_other_answers must be an object")
+    initial_other_answers: dict[str, str] = {}
+    for question_id, value in initial_other_raw.items():
+        question = question_by_id.get(question_id)
+        field = f"initial_other_answers.{question_id}"
+        if not question or question["type"] == "text" or not question.get("allow_other"):
+            raise SpecError(f"{field} must refer to a choice question with Other enabled")
+        if not isinstance(value, str) or len(value) > 1000:
+            raise SpecError(f"{field} must be a string of at most 1000 characters")
+        selected = initial_answers.get(question_id, "" if question["type"] == "single" else [])
+        has_other = selected == OTHER_VALUE if question["type"] == "single" else OTHER_VALUE in selected
+        if not has_other:
+            raise SpecError(f"{field} requires __other__ in initial_answers.{question_id}")
+        initial_other_answers[question_id] = value
+
     return {
         "schema_version": 1,
         "form_id": form_id,
@@ -200,6 +255,8 @@ def normalize_spec(raw: Any) -> dict[str, Any]:
         ),
         "questions": questions,
         "ui_copy": ui_copy,
+        "initial_answers": initial_answers,
+        "initial_other_answers": initial_other_answers,
     }
 
 

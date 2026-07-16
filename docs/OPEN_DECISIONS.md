@@ -33,11 +33,21 @@ The initial owner choices are resolved. Keep this file as the reasoned decision 
 - Status: `resolved — enabled by default`
 - Decision: Choice questions offer `Other` by default, and the board offers a separate “I need more explanation” path. Explanation requests may include drafts but are never completed decisions.
 
+## D06 — Delivery acknowledgement and retry
+
+- Status: `resolved — delivery remains unconfirmed inside the board`
+- Decision: A fulfilled `sendFollowUpMessage` call does not prove that a conversation turn exists. Keep the answers available, show an unconfirmed state, and allow only an explicit retry of the byte-identical prompt with the same `submission_id`. Never retry automatically. Identical repeated IDs are duplicate no-ops; conflicting reuse fails closed.
+
+## D07 — Explanation preview and resume
+
+- Status: `resolved — show and restore the current draft`
+- Decision: The explanation confirmation includes readable labels for every current draft answer, including Other text. After explaining, re-render the same board with validated `initial_answers` and `initial_other_answers` so the user does not repeat their work.
+
 ## Proposed technical defaults that do not need an owner decision now
 
 - Support Codex Desktop with Visualize first; mark other Codex surfaces unsupported until tested.
 - Keep one canonical JSON schema and let both natural-language callers and other skills normalize into it.
 - Use one fixed HTML fragment asset plus a small deterministic renderer for schema validation and safe data injection.
-- Allow one active board and one submission in V0.
-- Use `window.openai.sendFollowUpMessage({ prompt })` without optional host-specific fields.
+- Allow one active board and at most one in-flight host request in V0.
+- Use `window.openai.sendFollowUpMessage({ prompt, title })`; treat its completion as a request result, not delivery proof.
 - Keep BSA-specific questions and decisions outside the generic skill.
