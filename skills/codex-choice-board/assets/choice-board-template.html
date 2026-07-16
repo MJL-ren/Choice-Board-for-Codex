@@ -1,0 +1,444 @@
+<div id="codex-choice-board-v1">
+  <form id="codex-choice-board-form" novalidate>
+    <div id="codex-choice-board-questions"></div>
+
+    <div id="codex-choice-board-explanation-control" class="form-check form-switch">
+      <input
+        id="codex-choice-board-needs-explanation"
+        class="form-check-input"
+        type="checkbox"
+        aria-controls="codex-choice-board-explanation-panel"
+      >
+      <label
+        id="codex-choice-board-needs-explanation-label"
+        class="form-check-label"
+        for="codex-choice-board-needs-explanation"
+      ></label>
+    </div>
+
+    <label
+      id="codex-choice-board-explanation-panel"
+      class="form-label"
+      for="codex-choice-board-explanation-text"
+      hidden
+    >
+      <span id="codex-choice-board-explanation-label"></span>
+      <textarea
+        id="codex-choice-board-explanation-text"
+        class="form-control"
+        rows="3"
+      ></textarea>
+    </label>
+
+    <p
+      id="codex-choice-board-error"
+      class="text-small text-destructive"
+      role="alert"
+      aria-live="polite"
+      hidden
+    ></p>
+
+    <div class="viz-controls">
+      <button
+        id="codex-choice-board-submit"
+        class="btn btn-primary"
+        type="submit"
+      ></button>
+    </div>
+
+    <p
+      id="codex-choice-board-status"
+      class="text-small"
+      role="status"
+      aria-live="polite"
+    ></p>
+  </form>
+</div>
+
+<script type="application/json" id="codex-choice-board-spec">__CHOICE_BOARD_SPEC_BASE64__</script>
+
+<style>
+  #codex-choice-board-v1 [hidden] {
+    display: none !important;
+  }
+
+  #codex-choice-board-v1,
+  #codex-choice-board-form,
+  #codex-choice-board-questions,
+  #codex-choice-board-v1 .choice-board-question,
+  #codex-choice-board-v1 .choice-board-options {
+    display: grid;
+    min-width: 0;
+    gap: 12px;
+  }
+
+  #codex-choice-board-v1 .choice-board-options {
+    gap: 6px;
+  }
+</style>
+
+<script>
+(() => {
+  "use strict";
+
+  const root = document.getElementById("codex-choice-board-v1");
+  const form = document.getElementById("codex-choice-board-form");
+  const questionsRoot = document.getElementById("codex-choice-board-questions");
+  const specElement = document.getElementById("codex-choice-board-spec");
+  const explanationControl = document.getElementById("codex-choice-board-explanation-control");
+  const explanationToggle = document.getElementById("codex-choice-board-needs-explanation");
+  const explanationToggleLabel = document.getElementById("codex-choice-board-needs-explanation-label");
+  const explanationPanel = document.getElementById("codex-choice-board-explanation-panel");
+  const explanationLabel = document.getElementById("codex-choice-board-explanation-label");
+  const explanationText = document.getElementById("codex-choice-board-explanation-text");
+  const error = document.getElementById("codex-choice-board-error");
+  const status = document.getElementById("codex-choice-board-status");
+  const submit = document.getElementById("codex-choice-board-submit");
+
+  const decodeUtf8 = (encoded) => {
+    const binary = window.atob(encoded.trim());
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  };
+
+  const spec = JSON.parse(decodeUtf8(specElement.textContent));
+  const bundledCopy = {
+    en: {
+      other: "Other",
+      otherPrompt: "Type your answer",
+      needExplanation: "I need more explanation before choosing",
+      explanationLabel: "What would you like explained?",
+      explanationPlaceholder: "Tell me what is unclear. You can leave this blank for a general explanation.",
+      sendAnswers: "Send choices",
+      sendExplanation: "Ask for explanation",
+      singleHint: "Choose one.",
+      multiHint: "Choose one or more.",
+      required: "Required",
+      requiredQuestionError: "Answer “{question}” before sending.",
+      otherQuestionError: "Add your Other answer for “{question}”.",
+      textTooLongError: "Shorten “{question}” before sending.",
+      otherTooLongError: "Shorten the Other answer for “{question}”.",
+      explanationTooLongError: "Shorten the explanation request before sending.",
+      sending: "Sending…",
+      sent: "Sent.",
+      failed: "It did not send. Your choices are still here, so you can try again.",
+      unavailable: "This board cannot send from the current surface. Reply with the same choices in chat.",
+      responseHeading: "Choice Board response",
+      explanationHeading: "Choice Board explanation request"
+    },
+    ko: {
+      other: "기타",
+      otherPrompt: "원하는 답을 적어 주세요",
+      needExplanation: "선택하기 전에 설명이 더 필요해요",
+      explanationLabel: "어떤 점을 더 설명해 드릴까요?",
+      explanationPlaceholder: "궁금한 점을 적어 주세요. 비워 두면 선택지 전반을 설명해 드려요.",
+      sendAnswers: "선택 보내기",
+      sendExplanation: "설명 요청하기",
+      singleHint: "하나를 골라 주세요.",
+      multiHint: "여러 개를 골라도 돼요.",
+      required: "필수",
+      requiredQuestionError: "“{question}” 항목을 선택해 주세요.",
+      otherQuestionError: "“{question}”의 기타 답변을 적어 주세요.",
+      textTooLongError: "“{question}” 답변을 조금 줄여 주세요.",
+      otherTooLongError: "“{question}”의 기타 답변을 조금 줄여 주세요.",
+      explanationTooLongError: "설명 요청을 조금 줄여 주세요.",
+      sending: "보내는 중…",
+      sent: "보냈어요.",
+      failed: "보내지 못했어요. 선택은 그대로 두었으니 다시 시도해 주세요.",
+      unavailable: "현재 화면에서는 보낼 수 없어요. 같은 선택을 채팅으로 답해 주세요.",
+      responseHeading: "선택 보드 답변",
+      explanationHeading: "선택 보드 설명 요청"
+    }
+  };
+  const copy = Object.assign({}, bundledCopy[spec.locale] || bundledCopy.en, spec.ui_copy || {});
+  const questionElements = new Map();
+  let submitting = false;
+  let submitted = false;
+
+  const element = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+
+  const makeOption = (question, option, type, optionIndex) => {
+    const wrapper = element("div", "form-check");
+    const input = element("input", "form-check-input");
+    const inputId = `cb-${spec.form_id}-${question.id}-${optionIndex}`;
+    input.type = type;
+    input.id = inputId;
+    input.name = `cb-${spec.form_id}-${question.id}`;
+    input.value = option.value;
+
+    const label = element("label", "form-check-label", option.label);
+    label.htmlFor = inputId;
+    wrapper.append(input, label);
+    return { wrapper, input };
+  };
+
+  const renderQuestion = (question, questionIndex) => {
+    const section = element("section", "choice-board-question");
+    const labelId = `cb-${spec.form_id}-${question.id}-label`;
+    section.setAttribute("role", "group");
+    section.setAttribute("aria-labelledby", labelId);
+    if (question.required) section.setAttribute("aria-required", "true");
+
+    const visibleLabel = question.required ? `${question.label} (${copy.required})` : question.label;
+    const label = element("p", "form-label", visibleLabel);
+    label.id = labelId;
+    section.append(label);
+    if (question.description) section.append(element("p", "text-small", question.description));
+
+    if (question.type === "text") {
+      const input = element("textarea", "form-control");
+      input.id = `cb-${spec.form_id}-${question.id}`;
+      input.rows = 3;
+      input.maxLength = 4000;
+      input.placeholder = question.placeholder || "";
+      input.setAttribute("aria-labelledby", labelId);
+      if (question.required) input.setAttribute("aria-required", "true");
+      section.append(input);
+      questionElements.set(question.id, { question, inputs: [input], otherInput: null });
+    } else {
+      const hint = element("p", "text-small", question.type === "single" ? copy.singleHint : copy.multiHint);
+      section.append(hint);
+      const options = element("div", "choice-board-options");
+      const inputs = [];
+      const inputType = question.type === "single" ? "radio" : "checkbox";
+      question.options.forEach((option, optionIndex) => {
+        const rendered = makeOption(question, option, inputType, optionIndex);
+        inputs.push(rendered.input);
+        options.append(rendered.wrapper);
+      });
+
+      let otherInput = null;
+      if (question.allow_other) {
+        const rendered = makeOption(
+          question,
+          { value: "__other__", label: copy.other },
+          inputType,
+          question.options.length
+        );
+        const otherId = `cb-${spec.form_id}-${question.id}-other-text`;
+        rendered.input.setAttribute("aria-controls", otherId);
+        inputs.push(rendered.input);
+        options.append(rendered.wrapper);
+
+        const otherLabel = element("label", "form-label");
+        otherLabel.htmlFor = otherId;
+        otherLabel.hidden = true;
+        const otherLabelText = element("span", "", copy.otherPrompt);
+        otherInput = element("input", "form-control");
+        otherInput.type = "text";
+        otherInput.id = otherId;
+        otherInput.maxLength = 1000;
+        otherInput.disabled = true;
+        otherLabel.append(otherLabelText, otherInput);
+        options.append(otherLabel);
+
+        let wasSelected = false;
+        const syncOtherVisibility = () => {
+          const selected = rendered.input.checked;
+          otherLabel.hidden = !selected;
+          otherInput.disabled = !selected;
+          if (selected && !wasSelected) otherInput.focus();
+          wasSelected = selected;
+        };
+        inputs.forEach((input) => input.addEventListener("change", syncOtherVisibility));
+      }
+
+      section.append(options);
+      questionElements.set(question.id, { question, inputs, otherInput });
+    }
+
+    if (questionIndex < spec.questions.length - 1) section.setAttribute("data-question-separator", "true");
+    questionsRoot.append(section);
+  };
+
+  const collectAnswers = () => {
+    const answers = {};
+    const otherAnswers = {};
+    questionElements.forEach(({ question, inputs, otherInput }, questionId) => {
+      if (question.type === "text") {
+        answers[questionId] = inputs[0].value;
+        return;
+      }
+      const selected = inputs.filter((input) => input.checked).map((input) => input.value);
+      answers[questionId] = question.type === "single" ? (selected[0] || "") : selected;
+      if (selected.includes("__other__")) otherAnswers[questionId] = otherInput ? otherInput.value : "";
+    });
+    return { answers, otherAnswers };
+  };
+
+  const validateAnswerLengths = ({ answers, otherAnswers }) => {
+    const withQuestion = (template, question) => template.replace("{question}", question.label);
+    for (const question of spec.questions) {
+      const answer = answers[question.id];
+      if (question.type === "text" && answer.length > 4000) {
+        return {
+          message: withQuestion(copy.textTooLongError, question),
+          questionId: question.id,
+          target: "input"
+        };
+      }
+      if ((otherAnswers[question.id] || "").length > 1000) {
+        return { message: withQuestion(copy.otherTooLongError, question), questionId: question.id, target: "other" };
+      }
+    }
+    return null;
+  };
+
+  const validateAnswers = ({ answers, otherAnswers }) => {
+    const lengthError = validateAnswerLengths({ answers, otherAnswers });
+    if (lengthError) return lengthError;
+    const withQuestion = (template, question) => template.replace("{question}", question.label);
+    for (const question of spec.questions) {
+      const answer = answers[question.id];
+      if (question.required) {
+        if (question.type === "single" && !answer) {
+          return { message: withQuestion(copy.requiredQuestionError, question), questionId: question.id, target: "input" };
+        }
+        if (question.type === "multi" && answer.length === 0) {
+          return { message: withQuestion(copy.requiredQuestionError, question), questionId: question.id, target: "input" };
+        }
+        if (question.type === "text" && !answer.trim()) {
+          return { message: withQuestion(copy.requiredQuestionError, question), questionId: question.id, target: "input" };
+        }
+      }
+      const hasOther = question.type === "single"
+        ? answer === "__other__"
+        : question.type === "multi" && answer.includes("__other__");
+      if (hasOther && !(otherAnswers[question.id] || "").trim()) {
+        return { message: withQuestion(copy.otherQuestionError, question), questionId: question.id, target: "other" };
+      }
+    }
+    return null;
+  };
+
+  const focusValidationError = (validationError) => {
+    if (!validationError.questionId) {
+      explanationText.focus();
+      return;
+    }
+    const controls = questionElements.get(validationError.questionId);
+    if (!controls) return;
+    if (validationError.target === "other" && controls.otherInput) controls.otherInput.focus();
+    else if (controls.inputs[0]) controls.inputs[0].focus();
+  };
+
+  const optionLabel = (question, value, otherAnswers) => {
+    if (value === "__other__") return `${copy.other}: ${otherAnswers[question.id] || ""}`;
+    const option = (question.options || []).find((candidate) => candidate.value === value);
+    return option ? option.label : value;
+  };
+
+  const readableSummary = ({ answers, otherAnswers }) => spec.questions
+    .map((question) => {
+      const answer = answers[question.id];
+      if (question.type === "multi") {
+        const labels = answer.map((value) => optionLabel(question, value, otherAnswers)).join(", ");
+        return `- ${question.label}: ${labels || "—"}`;
+      }
+      if (question.type === "single") {
+        return `- ${question.label}: ${optionLabel(question, answer, otherAnswers) || "—"}`;
+      }
+      return `- ${question.label}: ${answer || "—"}`;
+    })
+    .join("\n");
+
+  const disableControls = (disabled) => {
+    form.querySelectorAll("input, textarea, button").forEach((control) => {
+      control.disabled = disabled;
+    });
+  };
+
+  spec.questions.forEach(renderQuestion);
+  explanationControl.hidden = !spec.allow_explanation;
+  explanationToggleLabel.textContent = copy.needExplanation;
+  explanationLabel.textContent = copy.explanationLabel;
+  explanationText.placeholder = copy.explanationPlaceholder;
+  explanationText.maxLength = 2000;
+  submit.textContent = spec.submit_label || copy.sendAnswers;
+
+  explanationToggle.addEventListener("change", () => {
+    explanationPanel.hidden = !explanationToggle.checked;
+    submit.textContent = explanationToggle.checked ? copy.sendExplanation : (spec.submit_label || copy.sendAnswers);
+    error.hidden = true;
+    if (explanationToggle.checked) explanationText.focus();
+  });
+
+  form.addEventListener("input", () => {
+    error.hidden = true;
+  });
+
+  if (!window.openai || typeof window.openai.sendFollowUpMessage !== "function") {
+    submit.disabled = true;
+    status.classList.add("text-destructive");
+    status.textContent = copy.unavailable;
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (submitting || submitted) return;
+
+    const collected = collectAnswers();
+    const needsExplanation = spec.allow_explanation && explanationToggle.checked;
+    const validationError = needsExplanation
+      ? (
+          explanationText.value.length > 2000
+            ? { message: copy.explanationTooLongError, questionId: null, target: "explanation" }
+            : validateAnswerLengths(collected)
+        )
+      : validateAnswers(collected);
+    if (validationError) {
+      error.textContent = validationError.message;
+      error.hidden = false;
+      focusValidationError(validationError);
+      return;
+    }
+
+    const payload = needsExplanation
+      ? {
+          schema_version: 1,
+          kind: "choice_board_explanation_request",
+          form_id: spec.form_id,
+          request: explanationText.value,
+          draft_answers: collected.answers,
+          draft_other_answers: collected.otherAnswers
+        }
+      : {
+          schema_version: 1,
+          kind: "choice_board_submission",
+          form_id: spec.form_id,
+          answers: collected.answers,
+          other_answers: collected.otherAnswers
+        };
+    const marker = needsExplanation ? "CHOICE_BOARD_EXPLANATION_REQUEST" : "CHOICE_BOARD_SUBMISSION";
+    const heading = needsExplanation ? copy.explanationHeading : copy.responseHeading;
+    const summary = needsExplanation
+      ? (explanationText.value || copy.needExplanation)
+      : readableSummary(collected);
+    const prompt = `${heading}\n\n${summary}\n\n${marker}\n${JSON.stringify(payload)}`;
+
+    submitting = true;
+    error.hidden = true;
+    status.classList.remove("text-destructive");
+    status.textContent = copy.sending;
+    submit.disabled = true;
+    try {
+      await window.openai.sendFollowUpMessage({ prompt });
+      submitted = true;
+      disableControls(true);
+      status.textContent = copy.sent;
+    } catch (sendError) {
+      submitting = false;
+      submit.disabled = false;
+      status.classList.add("text-destructive");
+      status.textContent = copy.failed;
+    }
+  });
+
+  root.setAttribute("data-choice-board-ready", "true");
+})();
+</script>

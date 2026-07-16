@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "form_id": "example-basic-ko",
+  "locale": "ko",
+  "allow_explanation": true,
+  "questions": [
+    {
+      "id": "direction",
+      "type": "single",
+      "label": "어느 방향이 가장 가까운가요?",
+      "required": true,
+      "options": [
+        { "value": "simple", "label": "가볍게 시작" },
+        { "value": "balanced", "label": "균형 있게 진행" },
+        { "value": "thorough", "label": "꼼꼼하게 검토" }
+      ]
+    },
+    {
+      "id": "priorities",
+      "type": "multi",
+      "label": "중요하게 볼 항목을 골라 주세요.",
+      "required": true,
+      "options": [
+        { "value": "ease", "label": "쓰기 쉬움" },
+        { "value": "speed", "label": "빠른 처리" },
+        { "value": "safety", "label": "안전한 확인" }
+      ]
+    },
+    {
+      "id": "note",
+      "type": "text",
+      "label": "덧붙일 내용이 있나요?",
+      "required": false,
+      "placeholder": "없으면 비워 두어도 돼요."
+    }
+  ]
+}

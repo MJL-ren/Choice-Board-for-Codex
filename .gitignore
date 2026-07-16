@@ -1,0 +1,16 @@
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local scratch output
+*.log
+*.tmp
+*.bak
+
+# Python test and build output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+build/
+dist/
