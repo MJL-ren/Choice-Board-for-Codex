@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "form_id": "locale-compact-en",
+  "locale": "en",
+  "allow_explanation": true,
+  "questions": [
+    {
+      "id": "route",
+      "type": "single",
+      "label": "Which route should we take?",
+      "required": true,
+      "options": [
+        { "value": "simple", "label": "Keep it simple" },
+        { "value": "deep", "label": "Explore it deeply" }
+      ]
+    },
+    {
+      "id": "checks",
+      "type": "multi",
+      "label": "What should we check?",
+      "options": [
+        { "value": "scope", "label": "Scope" },
+        { "value": "quality", "label": "Quality" }
+      ]
+    },
+    {
+      "id": "note",
+      "type": "text",
+      "label": "Anything else?"
+    }
+  ]
+}

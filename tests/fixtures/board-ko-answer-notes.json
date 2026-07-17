@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "form_id": "answer-notes-compact-ko",
+  "locale": "ko",
+  "allow_explanation": true,
+  "questions": [
+    {
+      "id": "direction",
+      "type": "single",
+      "label": "어떤 방향이 더 좋나요?",
+      "required": true,
+      "allow_other": true,
+      "allow_answer_note": true,
+      "options": [
+        { "value": "simple", "label": "간단하게" },
+        { "value": "deep", "label": "깊이 있게" }
+      ]
+    },
+    {
+      "id": "checks",
+      "type": "multi",
+      "label": "함께 챙길 점을 골라 주세요.",
+      "required": true,
+      "allow_other": true,
+      "allow_answer_note": true,
+      "options": [
+        { "value": "scope", "label": "범위" },
+        { "value": "quality", "label": "완성도" },
+        { "value": "speed", "label": "속도" }
+      ]
+    }
+  ]
+}

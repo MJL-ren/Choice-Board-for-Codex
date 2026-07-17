@@ -130,7 +130,7 @@ The repository implementation was tightened after the two failed edge runs:
 - the receiving skill contract now treats canonical JSON as authority and handles duplicate/conflicting submission IDs fail-closed;
 - required error and delivery status text no longer use the smallest text style.
 
-The Python suite and headless Chrome smoke test pass these paths locally. Codex Desktop cancellation, retry, callback delivery, and draft restoration remain `PENDING LIVE REVALIDATION` until a new authorized board run completes.
+The Python suite and headless Chrome smoke test pass these paths locally. A later authorized Codex Desktop run also completed the cancellation, retry, callback delivery, readable draft, replacement-board restoration, and final submission path.
 
 Sequential flow identity, bounded multi-select counts, optional single-choice clearing, and renderer report mode remain deferred candidates. They were not required to close the observed delivery and explanation failures.
 
@@ -163,19 +163,103 @@ Sequential flow identity, bounded multi-select counts, optional single-choice cl
 - Verdict: `FAIL — cancellation treated as delivery, draft-choice preview inadequate, retry unavailable`.
 - Canonical `Other` and explanation-draft payload delivery remain unverified because cancellation produced no conversation message.
 
-## Next live test protocol
+## Patched live recheck
 
-Pause further explanation-request live tests until the confirmation summary and cancellation-safe state handling are changed. Repeating the same flow would force the user to re-enter answers while the receiver still lacks a delivery oracle.
+- Fixture: `fruit-vegetable-retry-test-v2`, five non-sensitive fruit and vegetable preference questions.
+- The first host confirmation was cancelled. No callback appeared, and the board kept the visible draft while showing `같은 내용 다시 보내기` and an explicit delivery-unconfirmed explanation.
+- The manual retry produced one canonical explanation request in the same conversation.
+- Its readable `현재 선택 초안` contained the same radio and checkbox labels as the canonical draft payload.
+- The replacement board restored all selected values and returned to an editable state.
+- The final canonical submission matched the restored draft and used a distinct final-submission ID.
+- Verdict: `PASS — patched cancellation, retry, explanation preview, draft restoration, and final submission path`.
 
-After the narrow fix, use one small fruit-and-vegetable preference board.
+The conversation cannot expose the cancelled attempt's hidden envelope, so the live run does not independently compare the cancelled and retried `submission_id`. Byte-identical retry identity remains covered by the browser test.
 
-1. Select `Other` for one required choice and enter direct text.
-2. Leave the designated required multi-choice question blank, keep explanation mode off, and attempt a normal submission; verify blocking and focus.
-3. Record the visible blocking/focus behavior in the board's test-note field.
-4. Complete the multi-choice question, enable explanation mode, and submit an explanation request with drafts using one activation only.
-5. Explain the requested distinction and issue a replacement board.
-6. Observe whether the previous drafts are restored, then complete one canonical final submission.
+## Answer note — live validation, 2026-07-17
 
-Do not repeat the rapid double-activation test until the unconfirmed-delivery recovery design is implemented. The first run already produced a meaningful failure and repeating it would risk losing another draft without adding a reliable oracle.
+- Added an explicit choice-only `allow_answer_note` capability without changing the normal `answers` or `other_answers` shapes.
+- Notes return through sparse `answer_notes` / `draft_answer_notes` maps and restore through `initial_answer_notes`. Old note-disabled boards omit these fields and retain their previous guided-flow digest.
+- Python validation covers opt-in normalization, Minimal Draft preservation, note-enabled flow identity, restore without digest drift, and rejection on unknown, text, disabled, neutral, wrong-type, or overlong states.
+- A dedicated headless Chrome run passed compact and guided selection, collapsed note entry, changing a valid choice, clearing the final multi selection, Skip clearing, Back preservation, review/summary parity, `Other` plus note separation, immediate explanation, restored notes without focus theft, exact retry, new submission identity after editing, and 320px light/dark layout.
+- Existing compact and guided browser suites still pass and confirm that boards without the feature do not gain note fields in returned payloads.
+- A real three-question guided callback returned the expected single and multi answers plus three separate answer notes. The readable Korean summary matched the canonical `answer_notes` map, and the live tester confirmed that every note survived repeated Back/Next navigation.
+- Live feedback asked for slightly stronger at-a-glance hierarchy without adding cards or a custom color system. The question heading now uses the host's H3 size, the localized required marker uses the host's theme-aware validation color, the choice hint is underlined, and the collapsed note action uses normal-size medium-weight text.
+- Status: `LIVE PASS — callback, readable summary, canonical note map, and Back/Next preservation verified; lightweight hierarchy polish implemented`.
 
-Record the patched live result before calling the recovery path release-ready.
+## Mobile observation
+
+- A phone mirrored the same desktop-backed task but rendered the raw `::codex-inline-vis` directive instead of the board.
+- Visualize cannot be installed on that mobile surface.
+- Verdict: `UNAVAILABLE — use the numbered plain-text fallback and do not emit another board after the user reports mobile use`.
+- The mirrored task does not provide reliable automatic device detection.
+
+## Fixed guided Phase A — local readiness, 2026-07-17
+
+- Added a separate schema-version-2 `stepper` prototype without changing compact schema version 1.
+- The renderer rejects branch fields, restores a known `initial_question_id`, and locks the normalized form definition with `flow_digest`.
+- Python tests: 16 passed.
+- Existing compact Chrome smoke: passed.
+- New guided Chrome smoke: passed for one-visible-question navigation, no auto-advance, Back preservation, optional Skip clearing, full review, sequential correction, explanation identity, manual retry, restored position, host errors, and 320/736px light/dark layouts.
+- First live submission: `guided-food-phase-a-live-001` returned to the same conversation with schema version 2, `presentation: stepper`, five correctly typed answer fields, an empty valid Other map, a new submission ID, and the exact renderer-computed flow digest.
+- The readable Korean summary matched the canonical values and option labels in question order.
+- The live tester then traversed backward through earlier questions and confirmed that every prior selection remained restored. Live Back preservation is therefore verified.
+- Status: `BASIC LIVE SUBMISSION + BACK PRESERVATION PASS — final guided delivery and Back state are verified; live Skip behavior and explanation replacement to the same question remain only partially verified`.
+
+### Follow-up message readability polish — 2026-07-17
+
+- Kept the readable summary and canonical JSON transport unchanged in authority.
+- Added a horizontal rule, a plain-language `Codex가 읽는 자동 데이터` / `Data for Codex` explanation, and a Markdown text fence around the adjacent marker-plus-JSON pair.
+- This is presentation-only: the receiver still finds the exact marker line and parses the immediately following single JSON line.
+
+### All-question explicit Skip contract — 2026-07-17
+
+- Guided schema version 2 now enables Skip on every question by default, including required questions. A form may explicitly disable it per question when the workflow cannot proceed without that answer.
+- An intentional skip is represented by ordered `skipped_question_ids` rather than being inferred from an empty answer. Explanation requests use `draft_skipped_question_ids`, and restored boards use `initial_skipped_question_ids`.
+- Returning with Back and entering an answer removes that question from the skipped set. Skipping after an answer clears the answer and its Other text.
+- Python tests: 17 passed. Compact and guided Chrome smoke tests passed, including required-question Skip, restoration, replacement after Back, readable review, explanation draft state, and final canonical state.
+- Status: `SUPERSEDED — the combined run below verified Skip replacement and the immediate explanation callback`.
+
+### Combined Skip replacement and immediate explanation run — 2026-07-17
+
+- Fixture: `guided-final-skip-explanation-test-001`.
+- A required text question was explicitly skipped, revisited through Back, and answered before the explanation request.
+- The canonical callback contained the restored text answer and `draft_skipped_question_ids: []`, so the prior Skip state was removed instead of being confused with a blank answer.
+- The callback returned at the selected fourth question with all earlier single, multi, and text drafts intact. A replacement board was rendered with the same form ID, flow digest, active question, and draft values.
+- The user moved into deferred-explanation design before submitting the replacement board, so this run proves callback and replacement generation but not the replacement board's final submission.
+- Status: `IMMEDIATE EXPLANATION CALLBACK PASS — resumed final submission not exercised in this run`.
+
+### Deferred explanation — local implementation — 2026-07-17
+
+- Guided explanation now offers `지금 설명 듣기` and `설명 필요로 표시하고 계속` as distinct actions.
+- Deferred questions retain an optional provisional answer, remain separate from Skip, restore their question-specific request after Back, and appear as `설명 후 결정` in review.
+- A review containing deferred questions sends `after_completion`, not a completed Choice Board submission. The follow-up completion board contains only the deferred questions and carries a validated parent form ID, submission ID, and flow digest.
+- Python tests: 19 passed. Compact and guided Chrome smoke tests passed, including immediate-mode regression, unanswered required deferral, provisional-answer editing, parent-linked completion payload, duplicate suppression, retry identity, responsive layout, and theme checks.
+- Status: `LOCAL PASS — followed by the complete live run below`.
+
+### Deferred explanation through completion — Codex Desktop live run — 2026-07-17
+
+- The six-question guided form `deferred-explanation-live-test-20260717-001` left required question `priority_rule` unanswered and marked it `설명 후 결정` while preserving five completed answers.
+- Review returned one canonical `after_completion` request. The deferred list contained only `priority_rule`; skipped and deferred state remained disjoint, and the flow digest matched the rendered form.
+- The receiver used the completed answers as context, explained only the four pending option meanings, and rendered one compact completion question rather than recreating the six-question form.
+- The completion submission selected `recovery_value` and repeated the exact parent form ID, explanation-request submission ID, and parent flow digest. The receiver accepted only that deferred question and merged it into the preserved draft.
+- No completed question was re-asked or resubmitted, and the original task continued with all six final answers.
+- Status: `LIVE PASS — fixed guided immediate and deferred explanation core is validated`.
+
+## Internal authoring adapter — 2026-07-17
+
+- Six counterbalanced benchmark pairs covered 5, 10, and 15 logical questions; all twelve fresh target tasks passed on their first authored input.
+- Minimal Draft and direct public authoring produced byte-identical normalized canonical data and rendered output in every pair.
+- Minimal Draft used about 15% fewer semantic input bytes and showed a modest local authoring-time signal. Individual-pair variance was large enough that this is not a speed guarantee; the public aggregate is recorded in [`../tests/authoring_benchmark/RESULTS.md`](../tests/authoring_benchmark/RESULTS.md).
+- Decision: use Draft only inside the skill for a fresh fixed-guided board, compile to canonical JSON, and keep every public schema, renderer, callback, restore, and completion contract unchanged.
+- The 15-question profile was a synthetic authoring benchmark split into 12+3 under the then-current production limit. On 2026-07-18 that arbitrary schema-version-2 count ceiling was removed; the historical benchmark result and split remain unchanged evidence.
+
+## Bounded branching — first Codex Desktop callback, 2026-07-17
+
+- Fixture: `branching-agenda-intake-ko-001`, with 12 declared questions, one unconditional source, eight conditional sibling targets across four routes, and three common follow-up questions.
+- The user selected the `compare` route. Exactly its two route-specific questions plus the source and three common questions appeared in the returned readable summary: six active and six hidden questions.
+- The canonical callback returned the exact ordered path `agenda_type, choice_basis, choice_shape, time_horizon, hard_constraints, output_shape` in `active_question_ids`.
+- All six hidden targets remained present only as type-neutral values in `answers`. They were absent from Other, answer notes, Skip, deferred explanation, readable summary, and active-position state.
+- The installed independent receiver helper recomputed the same path from the canonical spec and source answer. Schema version, form ID, presentation, option values, answer types, and flow digest all validated.
+- The readable Korean labels matched the canonical option values. The callback had no notes, skipped questions, or Other answers.
+- This run proves live route selection, active-only review/summary, exact active-path return, and current-conversation delivery. It does not independently prove live source-change clearing through Back; that remains covered by the dedicated browser regression.
+- Status: `LIVE CALLBACK PASS — first bounded branching path validated; optimization Council pending explicit invocation`.

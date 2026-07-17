@@ -1,0 +1,56 @@
+[
+  {
+    "id": "budget_level",
+    "type": "single",
+    "label": "이번 활동에 쓸 수 있는 비용 범위는 어느 정도인가요?",
+    "allow_other": false,
+    "options": [
+      { "value": "free", "label": "비용 없이" },
+      { "value": "under_10000", "label": "1만 원 이하" },
+      { "value": "under_30000", "label": "3만 원 이하" },
+      { "value": "flexible", "label": "좋은 선택이라면 유연하게" }
+    ]
+  },
+  {
+    "id": "available_tools",
+    "type": "multi",
+    "label": "바로 활용할 수 있는 도구나 이동 수단을 골라 주세요.",
+    "options": [
+      { "value": "walking", "label": "걷기 좋은 신발" },
+      { "value": "bicycle", "label": "자전거" },
+      { "value": "public_transit", "label": "대중교통" },
+      { "value": "kitchen", "label": "간단한 조리 도구" },
+      { "value": "creative_tools", "label": "그림이나 글쓰기 도구" }
+    ]
+  },
+  {
+    "id": "accessibility_note",
+    "type": "text",
+    "label": "움직임이나 환경에서 꼭 배려해야 할 점이 있나요?",
+    "placeholder": "예: 계단이 많은 장소는 피하고, 조용히 쉴 곳이 필요해요"
+  },
+  {
+    "id": "planning_style",
+    "type": "single",
+    "label": "추천을 얼마나 구체적인 계획으로 받고 싶나요?",
+    "allow_other": false,
+    "options": [
+      { "value": "idea_only", "label": "아이디어만 간단히" },
+      { "value": "first_step", "label": "첫 행동까지" },
+      { "value": "short_plan", "label": "짧은 순서표로" },
+      { "value": "full_plan", "label": "준비부터 마무리까지" }
+    ]
+  },
+  {
+    "id": "follow_up_support",
+    "type": "multi",
+    "label": "추천 뒤에 함께 있으면 유용한 도움을 골라 주세요.",
+    "allow_other": false,
+    "options": [
+      { "value": "backup", "label": "상황이 바뀔 때 쓸 대안" },
+      { "value": "checklist", "label": "짧은 준비 체크리스트" },
+      { "value": "stop_rule", "label": "부담되면 멈출 기준" },
+      { "value": "next_time", "label": "다음 자유시간으로 이어갈 거리" }
+    ]
+  }
+]

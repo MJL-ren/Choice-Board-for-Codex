@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "form_id": "guided-test-ko-completion",
+  "locale": "ko",
+  "allow_explanation": true,
+  "completion_parent": {
+    "parent_form_id": "guided-test-ko",
+    "parent_submission_id": "cb-00000000-0000-4000-8000-000000000099",
+    "parent_flow_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "initial_answers": {
+    "tone": "__other__"
+  },
+  "initial_other_answers": {
+    "tone": "상황에 맞게"
+  },
+  "questions": [
+    {
+      "id": "tone",
+      "type": "single",
+      "label": "설명을 듣고 어떤 톤으로 정할까요?",
+      "required": true,
+      "options": [
+        { "value": "brief", "label": "짧고 직접적으로" },
+        { "value": "gentle", "label": "차근차근 부드럽게" }
+      ]
+    }
+  ]
+}

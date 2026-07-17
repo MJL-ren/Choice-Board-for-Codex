@@ -2,60 +2,190 @@
 
 > Unofficial community project. Not affiliated with or endorsed by OpenAI.
 
-Ask several related questions in one lightweight Codex Desktop board. People can choose one answer, select several, type their own answer, or ask for more explanation before deciding. The board requests a response in the same conversation and validates the envelope that actually arrives. No MCP required.
+Choice Board turns several related questions into one lightweight interactive
+board inside Codex Desktop. It supports single choice, multiple choice, free
+text, answer notes, explanations, review, and bounded one-layer branching. The
+result returns to the same conversation as a readable summary plus a validated
+machine payload.
 
-## Status
+No MCP server, localhost service, tunnel, database, or separate web app is
+required.
 
-Working private live prototype. Three ordinary Codex Desktop submissions have returned successfully. A cancellation and explanation-resume failure was reproduced, fixed locally, and still needs one live recovery recheck before release.
+## Why it exists
 
-## Designed for ordinary use
+Long numbered questionnaires are easy to skip or answer ambiguously. Choice
+Board gives each answer a clear shape while keeping the conversation as the
+source of context. People see normal labels and controls; Codex receives a
+canonical payload that it can validate before acting on the result.
 
-- Uses plain-language labels instead of exposing HTML or a schema.
-- Adds an **Other** path to choice questions by default.
-- Adds **I need more explanation** before the user has to commit to an answer.
-- Shows a short readable answer summary before the compact machine payload.
-- Uses Codex/Visualize native controls and is designed to follow the host light or dark theme.
+## Interaction modes
 
-## When it appears
+| Mode | Best for | Behavior |
+| --- | --- | --- |
+| Compact | 1–3 fixed questions | Shows the questions together and submits once. |
+| Guided | 4 or more fixed questions | Shows one question at a time with Back, Skip, explanation, notes, and final review. |
+| Bounded branching | Prewritten follow-ups that genuinely depend on one earlier choice | Uses one layer of `show_if` conditions, clears hidden state, and returns the exact active path. |
 
-The safe default is **only when called directly**. A user can later ask the skill to change to either:
+Guided and bounded-branching boards do not have an arbitrary question-count
+ceiling. The renderer still enforces per-field and fragment-size safety limits.
+Nested predicates and model-generated follow-up branches are deliberately out
+of scope.
 
-- **Ask first** when a choice board would help.
-- **Open automatically** when several related answers are easier to collect visually.
+## Requirements and support
 
-Missing or damaged settings always fall back to direct invocation only. Automatic use is still excluded for secrets, sensitive data, and final approval of destructive or external actions.
+- ChatGPT desktop app with Codex
+- OpenAI's **Visualize** plugin installed and enabled
+- Python 3.10 or newer available to Codex
 
-The setting is meant to be changed in ordinary language through the skill, for example: “Use `$codex-choice-board` only when I call it,” “ask me first when it would help,” or “open it automatically when it fits.” No YAML or JSON editing is expected from the user.
+| Surface | Status |
+| --- | --- |
+| Codex Desktop on Windows | Live tested |
+| Codex Desktop on macOS | Intended, not independently verified yet |
+| Mobile | Interactive board unavailable; plain-text fallback only |
+| Codex CLI and IDE extension | Not currently claimed |
 
-## Intended V0
+Plugin availability can vary by plan, workspace settings, role, surface, or
+region. When Visualize is unavailable—or when a phone shows the raw inline
+visualization directive—the skill immediately falls back to equivalent numbered
+text questions in the same conversation.
 
-- Render one thread-scoped board in Codex Desktop.
-- Support `single`, `multi`, and `text` questions.
-- Offer `Other` and a board-level explanation request by default.
-- Validate required answers before submission.
-- Request one self-identifying follow-up message in the current conversation without pretending that a closed confirmation dialog proves delivery.
-- Preserve an unchanged retry with one `submission_id`, and restore draft choices after an explanation request.
-- Use no MCP server, localhost service, tunnel, external request, or database. Answers and form state are not persisted; only the user-controlled activation preference is stored locally.
-- Fall back to a normal text reply when the host surface is unavailable.
+## Installation
 
-## Non-goals for V0
+1. In the ChatGPT desktop app, open **Plugins**, find **Visualize** by OpenAI,
+   and install or enable it.
+2. Ask Codex to install the skill from this repository:
 
-- A general survey or form-building platform
-- Conditional pages and complex branching
-- External data, accounts, permissions, or shared state
-- Automatic project changes based only on a board submission
-- Codex CLI, VS Code, Apps SDK, or MCP compatibility claims
+   ```text
+   $skill-installer Install the skill from https://github.com/MJL-ren/Choice-Board-for-Codex/tree/main/skills/codex-choice-board
+   ```
 
-## Development gates
+3. Start a new Codex task. If the skill or Visualize does not appear, restart
+   the desktop app and confirm both are enabled.
 
-1. Keep the resolved owner choices in [`docs/OPEN_DECISIONS.md`](docs/OPEN_DECISIONS.md) as the decision record.
-2. Validate schema, rendering, activation settings, accessibility, and duplicate-submit behavior.
-3. Recheck the cancellation, retry, explanation summary, and restored-draft path in an explicitly authorized Codex Desktop run.
-4. Verify a clean installation from the repository before packaging or publishing.
+OpenAI documents direct skill installation as a local authoring and
+experimentation path. A packaged Codex plugin is the preferred route for wider
+reusable distribution; this repository currently publishes the direct skill
+folder while that packaging path is evaluated.
 
-See [`docs/PROJECT_BRIEF.md`](docs/PROJECT_BRIEF.md) for the current product and test boundary.
+## Try it
 
-The current static and browser checks are recorded in [`docs/TESTING.md`](docs/TESTING.md). A simple Korean input example is available at [`examples/basic-ko.json`](examples/basic-ko.json).
+The guaranteed invocation form is:
+
+```text
+$codex-choice-board Ask me 6 questions to narrow down a weekend activity. Let me choose more than one preference, add a note to an answer, and ask for an explanation before deciding.
+```
+
+Direct requests such as “give me choices” or “show this in a choice board” are
+also recognized. The default remains fail-closed: the skill does not suggest or
+open a board for unrelated requests unless the user explicitly changes the
+activation mode to `suggest` or `auto`.
+
+Ready-to-render examples are available in:
+
+- [`examples/basic-en.json`](examples/basic-en.json)
+- [`examples/basic-ko.json`](examples/basic-ko.json)
+- [`examples/guided-ko.json`](examples/guided-ko.json)
+- [`examples/branching-ko.json`](examples/branching-ko.json)
+
+## How it works
+
+1. Codex converts the questions into the canonical Choice Board schema.
+2. A deterministic Python renderer validates the schema and injects it into a
+   fixed, root-scoped HTML fragment.
+3. Visualize displays native controls using the host theme.
+4. The board calls `window.openai.sendFollowUpMessage(...)` to request one
+   follow-up in the current conversation.
+5. The receiving Codex task validates the marker, form identity, answer types,
+   option values, flow digest, active path, and duplicate-submission identity
+   before using the response.
+
+A fulfilled host call is not treated as proof that the message reached the
+conversation. The board keeps the draft available and offers an explicit,
+byte-identical retry with the same `submission_id`. Automatic retry is never
+used.
+
+## Data and safety boundary
+
+- Submitted answers appear in the current Codex conversation.
+- The skill does not send answers to a separate server or database.
+- Temporary JSON and HTML may be created in the task's local visualization
+  directory; generated boards and user responses do not belong in this repo.
+- Only the user-controlled activation preference is stored locally by the
+  skill.
+- Do not use the board to collect secrets, credentials, sensitive personal
+  data, or final approval for destructive or external actions.
+- Human-readable labels are presentation. The compact JSON envelope is the
+  authority, and disagreement fails closed.
+
+See [`SECURITY.md`](SECURITY.md) for reporting and trust-boundary details.
+
+## Validation status
+
+The current public candidate has deterministic schema, escaping, compiler,
+branch-state, retry, and receiver-parity tests. Browser checks cover compact,
+guided, answer-note, branching, locale fallback, 30-question guided flow, 320px
+and 736px layouts, and host light/dark themes. Real Windows Codex Desktop runs
+have also exercised submission, cancellation recovery, Back preservation,
+immediate and deferred explanation, answer notes, and one bounded branch.
+
+These checks do not claim screen-reader certification, automatic mobile-device
+detection, or support on untested Codex surfaces. The exact boundary is recorded
+in [`docs/TESTING.md`](docs/TESTING.md).
+
+## Development
+
+Install the browser-test dependency:
+
+```powershell
+npm install
+npx playwright install chromium
+```
+
+Run the Python suite:
+
+```powershell
+python -m unittest discover -s tests -p "test_*.py" -v
+```
+
+Validate the skill package:
+
+```powershell
+python -X utf8 path/to/skill-creator/scripts/quick_validate.py skills/codex-choice-board
+```
+
+Replace `path/to/skill-creator` with the validator location in your Codex
+installation.
+Browser commands and generated-fixture steps are documented in
+[`docs/TESTING.md`](docs/TESTING.md).
+
+Run every browser regression after installing Playwright:
+
+```powershell
+npm run test:browser
+```
+
+## Built with Codex
+
+Development began on July 16, 2026, during the OpenAI Build Week submission
+period. Codex and GPT-5.6 were used to turn repeated live UX failures into the
+delivery-recovery contract, design the canonical schema and bounded branching
+rules, implement the renderer and compiler, generate adversarial fixtures, and
+run independent authoring comparisons. Product boundaries—especially the
+desktop-only interactive surface, fail-closed activation, no-server design,
+answer-note behavior, and one-layer branch limit—were explicit owner decisions.
+
+The dated development and possible hackathon evidence boundary is recorded in
+[`docs/DEVELOPMENT_PROVENANCE.md`](docs/DEVELOPMENT_PROVENANCE.md).
+
+## Documentation
+
+- [`docs/PROJECT_BRIEF.md`](docs/PROJECT_BRIEF.md) — product and runtime contract
+- [`docs/OPEN_DECISIONS.md`](docs/OPEN_DECISIONS.md) — resolved design decisions
+- [`docs/TESTING.md`](docs/TESTING.md) — current validation evidence and limits
+- [`skills/codex-choice-board/references/schema.md`](skills/codex-choice-board/references/schema.md) — canonical input and callback schema
+
+Contributions are welcome; read [`CONTRIBUTING.md`](CONTRIBUTING.md) before
+opening a change.
 
 ## License
 

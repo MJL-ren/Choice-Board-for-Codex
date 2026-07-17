@@ -1,0 +1,70 @@
+{
+  "schema_version": 2,
+  "presentation": "stepper",
+  "form_id": "guided-food-phase-a-live-001",
+  "locale": "ko",
+  "allow_explanation": true,
+  "questions": [
+    {
+      "id": "meal_direction",
+      "type": "single",
+      "label": "지금 한 끼를 고른다면 어떤 방향이 가장 끌리나요?",
+      "required": true,
+      "allow_answer_note": true,
+      "options": [
+        { "value": "warm_soup", "label": "따뜻한 국물과 밥" },
+        { "value": "rice_plate", "label": "반찬이나 고명을 곁들인 밥" },
+        { "value": "light_noodles", "label": "가볍고 깔끔한 면" },
+        { "value": "snack", "label": "간단한 분식이나 간식" }
+      ]
+    },
+    {
+      "id": "must_haves",
+      "type": "multi",
+      "label": "이번 음식에 꼭 있었으면 하는 특징을 골라 주세요.",
+      "required": true,
+      "allow_answer_note": true,
+      "options": [
+        { "value": "broth", "label": "개운한 국물" },
+        { "value": "crunch", "label": "살아 있는 아삭한 식감" },
+        { "value": "light_spice", "label": "살짝 칼칼한 맛" },
+        { "value": "protein", "label": "든든한 고기나 두부" },
+        { "value": "vegetables", "label": "채소와 버섯" }
+      ]
+    },
+    {
+      "id": "avoid",
+      "type": "multi",
+      "label": "이번에는 피하고 싶은 요소가 있나요?",
+      "required": false,
+      "description": "없으면 건너뛰어도 돼요.",
+      "allow_answer_note": true,
+      "options": [
+        { "value": "greasy", "label": "기름기가 강함" },
+        { "value": "mushy", "label": "물컹한 식감" },
+        { "value": "sweet", "label": "단맛이 강함" },
+        { "value": "cheese", "label": "치즈 맛이 강함" }
+      ]
+    },
+    {
+      "id": "situation",
+      "type": "text",
+      "label": "먹을 상황이나 함께 고려할 점이 있나요?",
+      "required": false,
+      "placeholder": "예: 늦은 저녁이라 너무 무겁지 않게"
+    },
+    {
+      "id": "recommendation_style",
+      "type": "single",
+      "label": "마지막 추천은 어떤 쪽이 좋나요?",
+      "required": true,
+      "allow_other": false,
+      "allow_answer_note": true,
+      "options": [
+        { "value": "familiar", "label": "익숙하고 실패 적은 음식" },
+        { "value": "new", "label": "조금 낯설어도 새로운 음식" },
+        { "value": "both", "label": "익숙한 것과 새로운 것 하나씩" }
+      ]
+    }
+  ]
+}

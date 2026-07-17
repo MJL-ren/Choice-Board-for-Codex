@@ -8,12 +8,14 @@ const { chromium } = require("playwright");
 const fragmentPath = process.argv[2];
 const visualizeCssPath = process.argv[3];
 const prefilledFragmentPath = process.argv[4];
+const completionFragmentPath = process.argv[5];
 if (!fragmentPath) {
   throw new Error("usage: node tests/browser_smoke.cjs <fragment.html> [visualize.css] [prefilled-fragment.html]");
 }
 
 const fragment = fs.readFileSync(fragmentPath, "utf8");
 const prefilledFragment = prefilledFragmentPath ? fs.readFileSync(prefilledFragmentPath, "utf8") : null;
+const completionFragment = completionFragmentPath ? fs.readFileSync(completionFragmentPath, "utf8") : null;
 const visualizeCss = visualizeCssPath ? fs.readFileSync(visualizeCssPath, "utf8") : "";
 const screenshotDirectory = process.env.CHOICE_BOARD_SCREENSHOT_DIR;
 
@@ -119,8 +121,13 @@ async function waitForState(page, state) {
       assert.equal(firstPayload.answers.route, "handoff");
       assert.deepEqual(firstPayload.answers.checks, ["scope"]);
       assert.equal(firstPayload.answers.note, "간단한 메모");
+      assert.equal(Object.prototype.hasOwnProperty.call(firstPayload, "answer_notes"), false);
       assert.match(firstPayload.submission_id, /^cb-/);
       assert.equal(firstCall.title, "선택 보드 답변");
+      assert.match(firstCall.prompt, /\n---\n\n\*\*Codex가 읽는 자동 데이터\*\*\n/);
+      assert.match(firstCall.prompt, /선택 내용을 정확히 전달하기 위한 값이에요/);
+      assert.match(firstCall.prompt, /```text\nCHOICE_BOARD_SUBMISSION\n/);
+      assert.match(firstCall.prompt, /\n```$/);
       assert.doesNotMatch(await page.textContent("#codex-choice-board-status"), /^보냈어요/);
       assert.equal(await page.isEnabled("#codex-choice-board-submit"), true);
       assert.match(await page.textContent("#codex-choice-board-submit"), /같은 내용 다시 보내기/);
@@ -163,10 +170,12 @@ async function waitForState(page, state) {
       assert.match(humanSummary, /범위/);
       assert.match(humanSummary, /간단한 메모/);
       const payload = parsePayload(prompt, "CHOICE_BOARD_EXPLANATION_REQUEST");
+      assert.match(prompt, /```text\nCHOICE_BOARD_EXPLANATION_REQUEST\n/);
       assert.equal(payload.kind, "choice_board_explanation_request");
       assert.equal(payload.request, "첫 선택지 차이를 설명해 줘");
       assert.equal(payload.draft_answers.route, "__other__");
       assert.equal(payload.draft_other_answers.route, "새 선택");
+      assert.equal(Object.prototype.hasOwnProperty.call(payload, "draft_answer_notes"), false);
       assert.match(payload.submission_id, /^cb-/);
       await context.close();
     }
@@ -239,6 +248,29 @@ async function waitForState(page, state) {
       assert.equal(payload.answers.route, "__other__");
       assert.deepEqual(payload.answers.checks, ["scope", "ownership"]);
       assert.equal(payload.other_answers.route, "새 방식");
+      await context.close();
+    }
+
+    if (completionFragment) {
+      const { context, page } = await newPage(
+        browser,
+        "fulfilled-ok",
+        { width: 736, height: 900 },
+        completionFragment
+      );
+      await page.click("#codex-choice-board-submit");
+      await waitForState(page, "unconfirmed");
+      const payload = parsePayload(
+        await page.evaluate(() => window.__calls[0].prompt),
+        "CHOICE_BOARD_SUBMISSION"
+      );
+      assert.deepEqual(payload.completion_parent, {
+        parent_form_id: "guided-test-ko",
+        parent_submission_id: "cb-00000000-0000-4000-8000-000000000099",
+        parent_flow_digest: "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      });
+      assert.equal(payload.answers.tone, "__other__");
+      assert.equal(payload.other_answers.tone, "상황에 맞게");
       await context.close();
     }
 

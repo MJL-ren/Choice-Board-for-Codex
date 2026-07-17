@@ -1,0 +1,49 @@
+{
+  "schema_version": 2,
+  "presentation": "stepper",
+  "form_id": "guided-branch-candidate-001",
+  "locale": "ko",
+  "questions": [
+    {
+      "id": "depth",
+      "type": "single",
+      "label": "어느 정도로 자세히 정할까요?",
+      "required": true,
+      "allow_other": false,
+      "options": [
+        {"value": "quick", "label": "빠르게 핵심만"},
+        {"value": "deep", "label": "세부 조건까지"}
+      ]
+    },
+    {
+      "id": "details",
+      "type": "multi",
+      "label": "어떤 세부 조건을 함께 볼까요?",
+      "required": true,
+      "allow_answer_note": true,
+      "show_if": {
+        "question_id": "depth",
+        "answer_in": ["deep"]
+      },
+      "options": [
+        {"value": "cost", "label": "비용"},
+        {"value": "time", "label": "시간"}
+      ]
+    },
+    {
+      "id": "note",
+      "type": "text",
+      "label": "공통으로 덧붙일 내용이 있나요?"
+    },
+    {
+      "id": "result",
+      "type": "single",
+      "label": "결과는 어떤 모양이 좋나요?",
+      "required": true,
+      "options": [
+        {"value": "one", "label": "한 가지 추천"},
+        {"value": "compare", "label": "두 가지 비교"}
+      ]
+    }
+  ]
+}

@@ -7,10 +7,30 @@ Desktop.ini
 *.log
 *.tmp
 *.bak
+.env
+.env.*
+!.env.example
+local-research/
 
 # Python test and build output
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.venv/
+venv/
+.coverage
+htmlcov/
 build/
 dist/
+
+# Node and browser-test output
+node_modules/
+coverage/
+playwright-report/
+test-results/
+
+# Local benchmark evidence and rejected research lanes
+tests/authoring_benchmark/runs/
+tests/authoring_benchmark/PILOT_RESULT_2026-07-17.md
+tests/route_slot_benchmark/
+tests/test_route_slot_benchmark.py

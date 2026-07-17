@@ -1,0 +1,263 @@
+{
+  "schema_version": 2,
+  "form_id": "authoring-benchmark-free-time-10q",
+  "locale": "ko",
+  "allow_explanation": true,
+  "submit_label": "",
+  "questions": [
+    {
+      "id": "time_window",
+      "type": "single",
+      "label": "다음 자유시간은 어느 정도로 생각할까요?",
+      "description": "",
+      "required": true,
+      "allow_skip": true,
+      "options": [
+        {
+          "value": "thirty_minutes",
+          "label": "30분 안팎"
+        },
+        {
+          "value": "one_hour",
+          "label": "1시간 안팎"
+        },
+        {
+          "value": "two_hours",
+          "label": "1~2시간"
+        },
+        {
+          "value": "half_day",
+          "label": "반나절"
+        }
+      ],
+      "allow_other": true
+    },
+    {
+      "id": "desired_effects",
+      "type": "multi",
+      "label": "그 시간을 보내고 나서 얻고 싶은 것을 골라 주세요.",
+      "description": "두 개 이상 골라도 괜찮아요.",
+      "required": true,
+      "allow_skip": true,
+      "options": [
+        {
+          "value": "rest",
+          "label": "푹 쉰 느낌"
+        },
+        {
+          "value": "refresh",
+          "label": "머리가 환기되는 느낌"
+        },
+        {
+          "value": "achievement",
+          "label": "작게라도 해낸 느낌"
+        },
+        {
+          "value": "connection",
+          "label": "누군가와 연결된 느낌"
+        },
+        {
+          "value": "fun",
+          "label": "그냥 즐거운 시간"
+        }
+      ],
+      "allow_other": true
+    },
+    {
+      "id": "energy_level",
+      "type": "single",
+      "label": "활동의 힘과 몰입 정도는 어느 쪽이 좋나요?",
+      "description": "",
+      "required": false,
+      "allow_skip": true,
+      "options": [
+        {
+          "value": "very_light",
+          "label": "거의 힘들이지 않고 가볍게"
+        },
+        {
+          "value": "light",
+          "label": "조금 움직이거나 집중하는 정도"
+        },
+        {
+          "value": "moderate",
+          "label": "적당히 몰입하고 움직이기"
+        },
+        {
+          "value": "active",
+          "label": "에너지를 충분히 쓰기"
+        }
+      ],
+      "allow_other": false
+    },
+    {
+      "id": "context_note",
+      "type": "text",
+      "label": "지금 상황에서 함께 고려할 점이 있나요?",
+      "description": "장소, 날씨, 컨디션처럼 추천에 영향을 주는 조건을 적어도 돼요.",
+      "required": false,
+      "allow_skip": true,
+      "placeholder": "예: 비가 와서 실내가 좋고, 늦은 시간은 피하고 싶어요"
+    },
+    {
+      "id": "setting_preferences",
+      "type": "multi",
+      "label": "괜찮은 활동 장소를 여러 개 골라 주세요.",
+      "description": "",
+      "required": false,
+      "allow_skip": true,
+      "options": [
+        {
+          "value": "home",
+          "label": "집 안"
+        },
+        {
+          "value": "nearby",
+          "label": "동네나 가까운 곳"
+        },
+        {
+          "value": "outdoors",
+          "label": "공원이나 야외"
+        },
+        {
+          "value": "cafe_library",
+          "label": "카페나 도서관"
+        },
+        {
+          "value": "online",
+          "label": "온라인 공간"
+        }
+      ],
+      "allow_other": true
+    },
+    {
+      "id": "social_mode",
+      "type": "single",
+      "label": "누구와 보내는 시간이 좋나요?",
+      "description": "",
+      "required": true,
+      "allow_skip": true,
+      "options": [
+        {
+          "value": "solo",
+          "label": "혼자"
+        },
+        {
+          "value": "one_person",
+          "label": "한 사람과 함께"
+        },
+        {
+          "value": "small_group",
+          "label": "작은 모임과 함께"
+        },
+        {
+          "value": "no_preference",
+          "label": "상관없음"
+        }
+      ],
+      "allow_other": false
+    },
+    {
+      "id": "avoid_conditions",
+      "type": "multi",
+      "label": "이번에는 피하고 싶은 조건이 있나요?",
+      "description": "",
+      "required": false,
+      "allow_skip": true,
+      "options": [
+        {
+          "value": "crowds",
+          "label": "사람이 많은 곳"
+        },
+        {
+          "value": "high_cost",
+          "label": "비용이 많이 드는 활동"
+        },
+        {
+          "value": "long_travel",
+          "label": "오래 이동해야 하는 활동"
+        },
+        {
+          "value": "weather_dependent",
+          "label": "날씨 영향을 많이 받는 활동"
+        },
+        {
+          "value": "more_screen",
+          "label": "화면을 오래 보는 활동"
+        }
+      ],
+      "allow_other": true
+    },
+    {
+      "id": "available_resources",
+      "type": "text",
+      "label": "이미 가지고 있거나 바로 쓸 수 있는 것이 있나요?",
+      "description": "",
+      "required": false,
+      "allow_skip": true,
+      "placeholder": "예: 자전거, 읽다 만 책, 간단한 요리 재료"
+    },
+    {
+      "id": "novelty",
+      "type": "single",
+      "label": "익숙함과 새로움 중 어느 쪽에 더 끌리나요?",
+      "description": "",
+      "required": false,
+      "allow_skip": true,
+      "options": [
+        {
+          "value": "familiar",
+          "label": "익숙하고 실패가 적은 쪽"
+        },
+        {
+          "value": "slightly_new",
+          "label": "익숙함에 새로움을 조금 더한 쪽"
+        },
+        {
+          "value": "new",
+          "label": "처음 해보는 새로운 쪽"
+        },
+        {
+          "value": "no_preference",
+          "label": "둘 다 괜찮음"
+        }
+      ],
+      "allow_other": true
+    },
+    {
+      "id": "result_details",
+      "type": "multi",
+      "label": "마지막 추천에 함께 넣을 내용을 골라 주세요.",
+      "description": "",
+      "required": false,
+      "allow_skip": true,
+      "options": [
+        {
+          "value": "best_pick",
+          "label": "가장 잘 맞는 한 가지"
+        },
+        {
+          "value": "alternatives",
+          "label": "성격이 다른 대안 두 가지"
+        },
+        {
+          "value": "prep_steps",
+          "label": "바로 시작할 수 있는 준비 순서"
+        },
+        {
+          "value": "cost_time",
+          "label": "예상 시간과 비용"
+        }
+      ],
+      "allow_other": false
+    }
+  ],
+  "ui_copy": {},
+  "initial_answers": {},
+  "initial_other_answers": {},
+  "presentation": "stepper",
+  "initial_question_id": "time_window",
+  "initial_skipped_question_ids": [],
+  "initial_deferred_explanation_requests": [],
+  "flow_digest": "sha256:0cbb2952302375d843f492c1a6a5a8597286621400c4c85a9cde25646f6a1dd8"
+}

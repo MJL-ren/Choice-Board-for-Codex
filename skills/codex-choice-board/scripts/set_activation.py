@@ -146,7 +146,10 @@ def write_settings(path: Path, mode: str) -> None:
 def activation_state(settings_path: Path, openai_yaml: Path) -> dict[str, object]:
     configured_mode, settings_state = read_mode(settings_path)
     allow_implicit, policy_state = read_policy(openai_yaml)
-    expected_policy = configured_mode in {"suggest", "auto"}
+    # Natural-language direct requests need the skill to remain discoverable in
+    # every mode. The inner setting, not this outer injection gate, controls
+    # ambient suggest/auto behavior after the skill is loaded.
+    expected_policy = True
     consistent = (
         settings_state == "valid"
         and policy_state == "valid"
@@ -186,9 +189,9 @@ def main() -> int:
             result = activation_state(args.settings_path, openai_yaml)
         else:
             mode = args.mode
-            allow_implicit = mode in {"suggest", "auto"}
+            allow_implicit = True
             if mode == "explicit":
-                update_policy(openai_yaml, False)
+                update_policy(openai_yaml, allow_implicit)
                 write_settings(args.settings_path, mode)
             else:
                 write_settings(args.settings_path, mode)

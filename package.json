@@ -1,0 +1,17 @@
+{
+  "name": "choice-board-for-codex",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Development dependencies for Choice Board browser validation.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "python -m unittest discover -s tests -p \"test_*.py\" -v",
+    "test:browser": "python tests/run_browser_smoke.py"
+  },
+  "devDependencies": {
+    "playwright": "1.61.1"
+  }
+}

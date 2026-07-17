@@ -1,0 +1,173 @@
+{
+  "schema_version": 2,
+  "presentation": "stepper",
+  "form_id": "branching-agenda-intake-ko-001",
+  "locale": "ko",
+  "allow_explanation": true,
+  "questions": [
+    {
+      "id": "agenda_type",
+      "type": "single",
+      "label": "지금 다듬으려는 안건은 어느 쪽에 가장 가깝나요?",
+      "description": "이 답에 따라 다음 두 질문이 안건에 맞게 달라져요.",
+      "required": true,
+      "allow_skip": false,
+      "allow_answer_note": true,
+      "options": [
+        {"value": "idea", "label": "새 아이디어를 구체화하고 싶음"},
+        {"value": "plan", "label": "이미 있는 계획을 더 단단하게 만들고 싶음"},
+        {"value": "problem", "label": "문제의 원인과 해결 방향을 찾고 싶음"},
+        {"value": "compare", "label": "여러 후보를 비교해 하나를 고르고 싶음"}
+      ]
+    },
+    {
+      "id": "idea_goal",
+      "type": "multi",
+      "label": "아이디어에서 이번에 얻고 싶은 것을 골라 주세요.",
+      "required": true,
+      "allow_answer_note": true,
+      "show_if": {"question_id": "agenda_type", "answer_in": ["idea"]},
+      "options": [
+        {"value": "clarify", "label": "핵심 목적과 경계 명확화"},
+        {"value": "expand", "label": "활용 방향과 변형안 확장"},
+        {"value": "feasibility", "label": "구현 가능성과 가장 작은 실험 확인"},
+        {"value": "risks", "label": "실패 조건과 부작용 찾기"}
+      ]
+    },
+    {
+      "id": "idea_novelty",
+      "type": "single",
+      "label": "새로운 방향을 어느 정도까지 열어 둘까요?",
+      "required": true,
+      "allow_answer_note": true,
+      "show_if": {"question_id": "agenda_type", "answer_in": ["idea"]},
+      "options": [
+        {"value": "safe", "label": "현재 생각을 크게 벗어나지 않기"},
+        {"value": "balanced", "label": "현실적인 안과 새로운 안을 함께 보기"},
+        {"value": "explore", "label": "낯선 방향도 적극적으로 탐색하기"}
+      ]
+    },
+    {
+      "id": "plan_pressure",
+      "type": "multi",
+      "label": "기존 계획에서 특히 압력을 가해 볼 부분을 골라 주세요.",
+      "required": true,
+      "allow_answer_note": true,
+      "show_if": {"question_id": "agenda_type", "answer_in": ["plan"]},
+      "options": [
+        {"value": "intent", "label": "원래 의도와 핵심 범위"},
+        {"value": "experience", "label": "사용 흐름과 경험"},
+        {"value": "stability", "label": "지속 유지와 실패 복구"},
+        {"value": "resources", "label": "시간·비용·사람 부담"},
+        {"value": "alternative", "label": "동등하거나 더 단순한 대안"}
+      ]
+    },
+    {
+      "id": "plan_change_scope",
+      "type": "single",
+      "label": "계획 수정 폭은 어디까지 허용할까요?",
+      "required": true,
+      "allow_answer_note": true,
+      "show_if": {"question_id": "agenda_type", "answer_in": ["plan"]},
+      "options": [
+        {"value": "patch", "label": "필수 보완만 작게 추가"},
+        {"value": "reorder", "label": "단계와 우선순위 재구성까지"},
+        {"value": "replace", "label": "더 나은 대체 계획도 허용"}
+      ]
+    },
+    {
+      "id": "problem_signal",
+      "type": "multi",
+      "label": "지금 문제에서 확인된 신호를 골라 주세요.",
+      "required": true,
+      "allow_answer_note": true,
+      "show_if": {"question_id": "agenda_type", "answer_in": ["problem"]},
+      "options": [
+        {"value": "repeatable", "label": "같은 순서로 다시 일어남"},
+        {"value": "state", "label": "상태나 저장값에 따라 달라짐"},
+        {"value": "environment", "label": "환경·연결·의존성에 따라 달라짐"},
+        {"value": "intermittent", "label": "가끔만 일어나 재현이 어려움"},
+        {"value": "unknown", "label": "아직 뚜렷한 신호가 없음"}
+      ]
+    },
+    {
+      "id": "problem_evidence",
+      "type": "single",
+      "label": "현재 확보된 근거는 어느 정도인가요?",
+      "required": true,
+      "allow_answer_note": true,
+      "show_if": {"question_id": "agenda_type", "answer_in": ["problem"]},
+      "options": [
+        {"value": "strong", "label": "재현 순서와 로그가 있음"},
+        {"value": "partial", "label": "관찰 내용과 일부 단서만 있음"},
+        {"value": "report", "label": "사용자 설명이나 결과 화면만 있음"},
+        {"value": "none", "label": "아직 조사 전임"}
+      ]
+    },
+    {
+      "id": "choice_basis",
+      "type": "multi",
+      "label": "후보를 비교할 때 중요한 기준을 골라 주세요.",
+      "required": true,
+      "allow_answer_note": true,
+      "show_if": {"question_id": "agenda_type", "answer_in": ["compare"]},
+      "options": [
+        {"value": "quality", "label": "결과 품질과 완성도"},
+        {"value": "speed", "label": "시작과 완료 속도"},
+        {"value": "cost", "label": "비용과 자원 부담"},
+        {"value": "maintain", "label": "유지보수와 확장성"},
+        {"value": "risk", "label": "실패 가능성과 되돌리기 쉬움"}
+      ]
+    },
+    {
+      "id": "choice_shape",
+      "type": "single",
+      "label": "비교 결과는 어떤 모양이어야 하나요?",
+      "required": true,
+      "allow_answer_note": true,
+      "show_if": {"question_id": "agenda_type", "answer_in": ["compare"]},
+      "options": [
+        {"value": "winner", "label": "하나의 권장안"},
+        {"value": "shortlist", "label": "상위 두세 개 후보"},
+        {"value": "conditional", "label": "조건에 따라 달라지는 선택표"}
+      ]
+    },
+    {
+      "id": "time_horizon",
+      "type": "single",
+      "label": "이 안건은 언제 쓸 결론인가요?",
+      "required": true,
+      "allow_answer_note": true,
+      "options": [
+        {"value": "now", "label": "바로 다음 작업에 사용"},
+        {"value": "soon", "label": "며칠 안에 다시 검토"},
+        {"value": "research", "label": "당장은 탐색 기록으로 보관"}
+      ]
+    },
+    {
+      "id": "hard_constraints",
+      "type": "multi",
+      "label": "반드시 지켜야 할 경계를 골라 주세요.",
+      "allow_answer_note": true,
+      "options": [
+        {"value": "scope", "label": "현재 범위를 불필요하게 키우지 않기"},
+        {"value": "compatibility", "label": "기존 흐름과 호환 유지"},
+        {"value": "reversible", "label": "쉽게 되돌릴 수 있기"},
+        {"value": "user_effort", "label": "사용자 부담을 늘리지 않기"}
+      ]
+    },
+    {
+      "id": "output_shape",
+      "type": "single",
+      "label": "이번 답변에서 받고 싶은 결과를 골라 주세요.",
+      "required": true,
+      "allow_answer_note": true,
+      "options": [
+        {"value": "recommendation", "label": "권장안과 이유"},
+        {"value": "options", "label": "여러 선택지와 장단점"},
+        {"value": "plan", "label": "실행 순서가 있는 계획"},
+        {"value": "questions", "label": "아직 결정해야 할 질문 목록"}
+      ]
+    }
+  ]
+}

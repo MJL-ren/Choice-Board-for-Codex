@@ -1,0 +1,29 @@
+{
+  "schema_version": 2,
+  "presentation": "stepper",
+  "form_id": "locale-branch-fr-fallback",
+  "locale": "fr",
+  "allow_explanation": true,
+  "questions": [
+    {
+      "id": "needs_detail",
+      "type": "single",
+      "label": "Faut-il préciser le résultat ?",
+      "required": true,
+      "allow_other": false,
+      "options": [
+        { "value": "yes", "label": "Oui" },
+        { "value": "no", "label": "Non" }
+      ]
+    },
+    {
+      "id": "detail",
+      "type": "text",
+      "label": "Quelle précision faut-il ajouter ?",
+      "show_if": {
+        "question_id": "needs_detail",
+        "answer_in": ["yes"]
+      }
+    }
+  ]
+}

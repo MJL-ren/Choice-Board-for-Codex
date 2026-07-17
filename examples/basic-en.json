@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "form_id": "public-basic-en-001",
+  "locale": "en",
+  "allow_explanation": true,
+  "questions": [
+    {
+      "id": "direction",
+      "type": "single",
+      "label": "Which direction should we explore first?",
+      "required": true,
+      "allow_other": true,
+      "allow_answer_note": true,
+      "options": [
+        { "value": "simple", "label": "Keep it simple and familiar" },
+        { "value": "balanced", "label": "Balance novelty and reliability" },
+        { "value": "experimental", "label": "Try the most experimental route" }
+      ]
+    },
+    {
+      "id": "priorities",
+      "type": "multi",
+      "label": "What should the result prioritize?",
+      "required": true,
+      "allow_other": true,
+      "options": [
+        { "value": "quality", "label": "Result quality" },
+        { "value": "speed", "label": "Speed" },
+        { "value": "maintainability", "label": "Maintainability" }
+      ]
+    },
+    {
+      "id": "context",
+      "type": "text",
+      "label": "Anything else Codex should consider?",
+      "required": false
+    }
+  ]
+}

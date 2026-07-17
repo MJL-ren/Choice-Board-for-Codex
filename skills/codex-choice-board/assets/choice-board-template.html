@@ -1,6 +1,19 @@
 <div id="codex-choice-board-v1">
   <form id="codex-choice-board-form" novalidate>
+    <p id="codex-choice-board-progress" class="text-small" hidden></p>
+    <p
+      id="codex-choice-board-branch-status"
+      class="sr-only"
+      role="status"
+      aria-live="polite"
+    ></p>
     <div id="codex-choice-board-questions"></div>
+
+    <section id="codex-choice-board-review" aria-labelledby="codex-choice-board-review-heading" hidden>
+      <h3 id="codex-choice-board-review-heading"></h3>
+      <p id="codex-choice-board-review-hint" class="text-small"></p>
+      <dl id="codex-choice-board-review-list"></dl>
+    </section>
 
     <div id="codex-choice-board-explanation-control" class="form-check form-switch">
       <input
@@ -38,7 +51,19 @@
       hidden
     ></p>
 
-    <div class="viz-controls">
+    <div id="codex-choice-board-guided-controls" class="viz-controls" hidden>
+      <button id="codex-choice-board-back" class="btn btn-secondary" type="button"></button>
+      <button id="codex-choice-board-skip" class="btn btn-secondary" type="button"></button>
+      <button id="codex-choice-board-next" class="btn btn-primary" type="button"></button>
+    </div>
+
+    <div id="codex-choice-board-submit-controls" class="viz-controls">
+      <button
+        id="codex-choice-board-defer-explanation"
+        class="btn btn-secondary"
+        type="button"
+        hidden
+      ></button>
       <button
         id="codex-choice-board-submit"
         class="btn btn-primary"
@@ -64,8 +89,11 @@
   #codex-choice-board-v1,
   #codex-choice-board-form,
   #codex-choice-board-questions,
+  #codex-choice-board-review,
+  #codex-choice-board-review-list,
   #codex-choice-board-v1 .choice-board-question,
-  #codex-choice-board-v1 .choice-board-options {
+  #codex-choice-board-v1 .choice-board-options,
+  #codex-choice-board-v1 .choice-board-answer-note {
     display: grid;
     min-width: 0;
     gap: 12px;
@@ -73,6 +101,54 @@
 
   #codex-choice-board-v1 .choice-board-options {
     gap: 6px;
+  }
+
+  #codex-choice-board-v1 .choice-board-question-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35em;
+    margin: 0;
+  }
+
+  #codex-choice-board-v1 .choice-board-question-hint {
+    width: fit-content;
+    max-width: 100%;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  #codex-choice-board-v1 .choice-board-answer-note {
+    margin-top: 6px;
+  }
+
+  #codex-choice-board-v1 .choice-board-answer-note > summary {
+    cursor: pointer;
+    width: fit-content;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    font-weight: var(--font-weight-medium);
+  }
+
+  #codex-choice-board-v1 .choice-board-answer-note .form-control {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+  }
+
+  #codex-choice-board-v1 #codex-choice-board-review-list {
+    margin: 0;
+  }
+
+  #codex-choice-board-v1 #codex-choice-board-review-list dt {
+    font-weight: 600;
+  }
+
+  #codex-choice-board-v1 #codex-choice-board-review-list dd {
+    margin: 0 0 12px;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
   }
 </style>
 
@@ -82,7 +158,13 @@
 
   const root = document.getElementById("codex-choice-board-v1");
   const form = document.getElementById("codex-choice-board-form");
+  const progress = document.getElementById("codex-choice-board-progress");
+  const branchStatus = document.getElementById("codex-choice-board-branch-status");
   const questionsRoot = document.getElementById("codex-choice-board-questions");
+  const review = document.getElementById("codex-choice-board-review");
+  const reviewHeading = document.getElementById("codex-choice-board-review-heading");
+  const reviewHint = document.getElementById("codex-choice-board-review-hint");
+  const reviewList = document.getElementById("codex-choice-board-review-list");
   const specElement = document.getElementById("codex-choice-board-spec");
   const explanationControl = document.getElementById("codex-choice-board-explanation-control");
   const explanationToggle = document.getElementById("codex-choice-board-needs-explanation");
@@ -92,6 +174,12 @@
   const explanationText = document.getElementById("codex-choice-board-explanation-text");
   const error = document.getElementById("codex-choice-board-error");
   const status = document.getElementById("codex-choice-board-status");
+  const guidedControls = document.getElementById("codex-choice-board-guided-controls");
+  const back = document.getElementById("codex-choice-board-back");
+  const skip = document.getElementById("codex-choice-board-skip");
+  const next = document.getElementById("codex-choice-board-next");
+  const submitControls = document.getElementById("codex-choice-board-submit-controls");
+  const deferExplanation = document.getElementById("codex-choice-board-defer-explanation");
   const submit = document.getElementById("codex-choice-board-submit");
 
   const decodeUtf8 = (encoded) => {
@@ -105,11 +193,20 @@
     en: {
       other: "Other",
       otherPrompt: "Type your answer",
+      answerNote: "Add a note to this choice",
+      answerNotePrompt: "Optional details to keep with this choice",
+      answerNoteSummary: "Note",
       needExplanation: "I need more explanation before choosing",
+      needExplanationGuided: "This question needs more explanation",
       explanationLabel: "What would you like explained?",
       explanationPlaceholder: "Tell me what is unclear. You can leave this blank for a general explanation.",
       sendAnswers: "Send choices",
-      sendExplanation: "Ask for explanation",
+      sendExplanation: "Explain now",
+      deferExplanation: "Mark for explanation and continue",
+      sendAnswersAndExplanation: "Send answers and explanation request",
+      pendingExplanation: "Decide after explanation",
+      deferredHeading: "Questions that need explanation",
+      generalExplanation: "Explain the options generally",
       singleHint: "Choose one.",
       multiHint: "Choose one or more.",
       required: "Required",
@@ -117,6 +214,7 @@
       otherQuestionError: "Add your Other answer for “{question}”.",
       textTooLongError: "Shorten “{question}” before sending.",
       otherTooLongError: "Shorten the Other answer for “{question}”.",
+      answerNoteTooLongError: "Shorten the note for “{question}”.",
       explanationTooLongError: "Shorten the explanation request before sending.",
       sending: "Sending…",
       deliveryUnconfirmed: "The confirmation closed, but this board cannot verify delivery. If no reply appears in chat, you can send the same content again.",
@@ -126,16 +224,37 @@
       unavailable: "This board cannot send from the current surface. Reply with the same choices in chat.",
       responseHeading: "Choice Board response",
       explanationHeading: "Choice Board explanation request",
-      draftHeading: "Current draft choices"
+      draftHeading: "Current draft choices",
+      modelDataHeading: "Data for Codex",
+      modelDataHint: "This automatic data lets Codex read your choices accurately. You do not need to read or edit it.",
+      back: "Back",
+      next: "Next",
+      skip: "Skip",
+      progress: "Question {current} of {total}",
+      branchProgress: "Question {current} · later questions depend on your answers",
+      branchChanged: "Later questions were updated to match your answer.",
+      reviewProgress: "Review choices",
+      reviewHeading: "Review your choices",
+      reviewHint: "Use Back to make changes, then return here to send once.",
+      skipped: "Skipped"
     },
     ko: {
       other: "기타",
       otherPrompt: "원하는 답을 적어 주세요",
+      answerNote: "선택에 덧붙일 말",
+      answerNotePrompt: "선택한 답과 함께 전할 내용을 적어 주세요",
+      answerNoteSummary: "덧붙임",
       needExplanation: "선택하기 전에 설명이 더 필요해요",
+      needExplanationGuided: "이 항목에 설명이 필요해요",
       explanationLabel: "어떤 점을 더 설명해 드릴까요?",
       explanationPlaceholder: "궁금한 점을 적어 주세요. 비워 두면 선택지 전반을 설명해 드려요.",
       sendAnswers: "선택 보내기",
-      sendExplanation: "설명 요청하기",
+      sendExplanation: "지금 설명 듣기",
+      deferExplanation: "설명 필요로 표시하고 계속",
+      sendAnswersAndExplanation: "답변과 설명 요청 보내기",
+      pendingExplanation: "설명 후 결정",
+      deferredHeading: "설명이 필요한 항목",
+      generalExplanation: "선택지 전반 설명",
       singleHint: "하나를 골라 주세요.",
       multiHint: "여러 개를 골라도 돼요.",
       required: "필수",
@@ -143,6 +262,7 @@
       otherQuestionError: "“{question}”의 기타 답변을 적어 주세요.",
       textTooLongError: "“{question}” 답변을 조금 줄여 주세요.",
       otherTooLongError: "“{question}”의 기타 답변을 조금 줄여 주세요.",
+      answerNoteTooLongError: "“{question}”의 덧붙임 메모를 조금 줄여 주세요.",
       explanationTooLongError: "설명 요청을 조금 줄여 주세요.",
       sending: "보내는 중…",
       deliveryUnconfirmed: "확인창 처리는 끝났지만 대화 도착 여부는 확인할 수 없어요. 답변이 보이지 않으면 같은 내용을 다시 보낼 수 있어요.",
@@ -152,7 +272,19 @@
       unavailable: "현재 화면에서는 보낼 수 없어요. 같은 선택을 채팅으로 답해 주세요.",
       responseHeading: "선택 보드 답변",
       explanationHeading: "선택 보드 설명 요청",
-      draftHeading: "현재 선택 초안"
+      draftHeading: "현재 선택 초안",
+      modelDataHeading: "Codex가 읽는 자동 데이터",
+      modelDataHint: "선택 내용을 정확히 전달하기 위한 값이에요. 직접 읽거나 수정하지 않아도 돼요.",
+      back: "뒤로",
+      next: "다음",
+      skip: "건너뛰기",
+      progress: "질문 {current} / {total}",
+      branchProgress: "질문 {current} · 이후 질문은 선택에 따라 달라져요",
+      branchChanged: "이후 질문이 선택에 맞게 바뀌었어요.",
+      reviewProgress: "답변 검토",
+      reviewHeading: "답변을 확인해 주세요",
+      reviewHint: "고칠 내용이 있으면 뒤로 이동해 수정한 뒤 다시 여기로 돌아오세요.",
+      skipped: "건너뜀"
     }
   };
   const copy = Object.assign({}, bundledCopy[spec.locale] || bundledCopy.en, spec.ui_copy || {});
@@ -160,6 +292,31 @@
   let submitting = false;
   let pendingEnvelope = null;
   let editedDuringFlight = false;
+  const isGuided = spec.schema_version === 2 && spec.presentation === "stepper";
+  const hasBranching = isGuided && spec.questions.some((question) => question.show_if);
+  const branchSourceIds = new Set(
+    spec.questions
+      .filter((question) => question.show_if)
+      .map((question) => question.show_if.question_id)
+  );
+  const activeQuestionIdsFor = (answers) => spec.questions
+    .filter((question) => (
+      !question.show_if
+      || question.show_if.answer_in.includes(answers[question.show_if.question_id] || "")
+    ))
+    .map((question) => question.id);
+  const hasAnswerNoteSupport = spec.questions.some((question) => question.allow_answer_note);
+  let activeQuestionIndex = isGuided
+    ? Math.max(0, spec.questions.findIndex((question) => question.id === spec.initial_question_id))
+    : 0;
+  let guidedView = "question";
+  const skippedQuestionIds = new Set(spec.initial_skipped_question_ids || []);
+  const allowDeferredExplanation = isGuided && spec.allow_deferred_explanation !== false;
+  const deferredExplanationRequests = new Map(
+    (spec.initial_deferred_explanation_requests || [])
+      .map((item) => [item.question_id, item.request])
+  );
+  let activePathSnapshot = [];
 
   const element = (tag, className, text) => {
     const node = document.createElement(tag);
@@ -185,14 +342,18 @@
 
   const renderQuestion = (question, questionIndex) => {
     const section = element("section", "choice-board-question");
+    section.dataset.questionId = question.id;
     const labelId = `cb-${spec.form_id}-${question.id}-label`;
     section.setAttribute("role", "group");
     section.setAttribute("aria-labelledby", labelId);
     if (question.required) section.setAttribute("aria-required", "true");
 
-    const visibleLabel = question.required ? `${question.label} (${copy.required})` : question.label;
-    const label = element("p", "form-label", visibleLabel);
+    const label = element("h3", "choice-board-question-heading");
     label.id = labelId;
+    label.append(element("span", "", question.label));
+    if (question.required) {
+      label.append(element("small", "choice-board-required text-destructive", `(${copy.required})`));
+    }
     section.append(label);
     if (question.description) section.append(element("p", "text-small", question.description));
 
@@ -209,11 +370,18 @@
         question,
         inputs: [input],
         otherInput: null,
+        answerNoteInput: null,
+        answerNoteDetails: null,
         section,
-        syncOtherVisibility: null
+        syncOtherVisibility: null,
+        syncAnswerNoteVisibility: null
       });
     } else {
-      const hint = element("p", "text-small", question.type === "single" ? copy.singleHint : copy.multiHint);
+      const hint = element(
+        "p",
+        "text-small choice-board-question-hint",
+        question.type === "single" ? copy.singleHint : copy.multiHint
+      );
       section.append(hint);
       const options = element("div", "choice-board-options");
       const inputs = [];
@@ -225,6 +393,7 @@
       });
 
       let otherInput = null;
+      let syncOtherVisibility = null;
       if (question.allow_other) {
         const rendered = makeOption(
           question,
@@ -250,33 +419,69 @@
         options.append(otherLabel);
 
         let wasSelected = false;
-        const syncOtherVisibility = (focusNew = true) => {
+        syncOtherVisibility = (focusNew = true) => {
           const selected = rendered.input.checked;
           otherLabel.hidden = !selected;
           otherInput.disabled = !selected;
           if (selected && !wasSelected && focusNew) otherInput.focus();
           wasSelected = selected;
         };
-        inputs.forEach((input) => input.addEventListener("change", () => syncOtherVisibility(true)));
-        questionElements.set(question.id, {
-          question,
-          inputs,
-          otherInput,
-          section,
-          syncOtherVisibility
-        });
       }
 
-      section.append(options);
-      if (!questionElements.has(question.id)) {
-        questionElements.set(question.id, {
-          question,
-          inputs,
-          otherInput,
-          section,
-          syncOtherVisibility: null
+      let answerNoteInput = null;
+      let answerNoteDetails = null;
+      let syncAnswerNoteVisibility = null;
+      if (question.allow_answer_note) {
+        answerNoteDetails = element("details", "choice-board-answer-note");
+        answerNoteDetails.hidden = true;
+        const answerNoteSummary = element("summary", "", copy.answerNote);
+        const answerNoteId = `cb-${spec.form_id}-${question.id}-answer-note`;
+        answerNoteDetails.id = `${answerNoteId}-panel`;
+        answerNoteSummary.id = `${answerNoteId}-toggle`;
+        answerNoteSummary.setAttribute("aria-label", `${question.label}: ${copy.answerNote}`);
+        const answerNoteLabel = element("label", "form-label");
+        answerNoteLabel.htmlFor = answerNoteId;
+        answerNoteLabel.append(element("span", "", copy.answerNotePrompt));
+        answerNoteInput = element("textarea", "form-control");
+        answerNoteInput.id = answerNoteId;
+        answerNoteInput.rows = 2;
+        answerNoteInput.maxLength = 1000;
+        answerNoteInput.disabled = true;
+        answerNoteSummary.addEventListener("click", () => {
+          if (!answerNoteDetails.open) {
+            window.setTimeout(() => answerNoteInput.focus(), 0);
+          }
         });
+        answerNoteLabel.append(answerNoteInput);
+        answerNoteDetails.append(answerNoteSummary, answerNoteLabel);
+        options.append(answerNoteDetails);
+
+        let hadSelectedAnswer = false;
+        syncAnswerNoteVisibility = () => {
+          const hasSelectedAnswer = inputs.some((input) => input.checked);
+          if (!hasSelectedAnswer && hadSelectedAnswer) answerNoteInput.value = "";
+          answerNoteDetails.hidden = !hasSelectedAnswer;
+          answerNoteInput.disabled = !hasSelectedAnswer;
+          if (!hasSelectedAnswer) answerNoteDetails.open = false;
+          hadSelectedAnswer = hasSelectedAnswer;
+        };
       }
+
+      inputs.forEach((input) => input.addEventListener("change", () => {
+        if (syncOtherVisibility) syncOtherVisibility(true);
+        if (syncAnswerNoteVisibility) syncAnswerNoteVisibility();
+      }));
+      section.append(options);
+      questionElements.set(question.id, {
+        question,
+        inputs,
+        otherInput,
+        answerNoteInput,
+        answerNoteDetails,
+        section,
+        syncOtherVisibility,
+        syncAnswerNoteVisibility
+      });
     }
 
     const validationMessage = element("p", "text-destructive");
@@ -292,7 +497,8 @@
   const collectAnswers = () => {
     const answers = {};
     const otherAnswers = {};
-    questionElements.forEach(({ question, inputs, otherInput }, questionId) => {
+    const answerNotes = {};
+    questionElements.forEach(({ question, inputs, otherInput, answerNoteInput }, questionId) => {
       if (question.type === "text") {
         answers[questionId] = inputs[0].value;
         return;
@@ -300,13 +506,34 @@
       const selected = inputs.filter((input) => input.checked).map((input) => input.value);
       answers[questionId] = question.type === "single" ? (selected[0] || "") : selected;
       if (selected.includes("__other__")) otherAnswers[questionId] = otherInput ? otherInput.value : "";
+      if (selected.length > 0 && answerNoteInput && answerNoteInput.value.trim()) {
+        answerNotes[questionId] = answerNoteInput.value;
+      }
     });
-    return { answers, otherAnswers };
+    const activeQuestionIds = activeQuestionIdsFor(answers);
+    const activeQuestionIdSet = new Set(activeQuestionIds);
+    return {
+      answers,
+      otherAnswers,
+      answerNotes,
+      activeQuestionIds,
+      skippedQuestionIds: spec.questions
+        .map((question) => question.id)
+        .filter((questionId) => activeQuestionIdSet.has(questionId) && skippedQuestionIds.has(questionId)),
+      deferredExplanationRequests: spec.questions
+        .filter((question) => activeQuestionIdSet.has(question.id) && deferredExplanationRequests.has(question.id))
+        .map((question) => ({
+          question_id: question.id,
+          request: deferredExplanationRequests.get(question.id) || ""
+        }))
+    };
   };
 
-  const validateAnswerLengths = ({ answers, otherAnswers }) => {
+  const validateAnswerLengths = ({ answers, otherAnswers, answerNotes, activeQuestionIds }) => {
     const withQuestion = (template, question) => template.replace("{question}", question.label);
+    const activeQuestionIdSet = new Set(activeQuestionIds);
     for (const question of spec.questions) {
+      if (!activeQuestionIdSet.has(question.id)) continue;
       const answer = answers[question.id];
       if (question.type === "text" && answer.length > 4000) {
         return {
@@ -318,40 +545,63 @@
       if ((otherAnswers[question.id] || "").length > 1000) {
         return { message: withQuestion(copy.otherTooLongError, question), questionId: question.id, target: "other" };
       }
+      if ((answerNotes[question.id] || "").length > 1000) {
+        return { message: withQuestion(copy.answerNoteTooLongError, question), questionId: question.id, target: "answer-note" };
+      }
     }
     return null;
   };
 
-  const validateAnswers = ({ answers, otherAnswers }) => {
-    const lengthError = validateAnswerLengths({ answers, otherAnswers });
-    if (lengthError) return lengthError;
+  const validateQuestion = (
+    question,
+    { answers, otherAnswers, answerNotes, skippedQuestionIds: skippedIds, deferredExplanationRequests: deferredRequests }
+  ) => {
     const withQuestion = (template, question) => template.replace("{question}", question.label);
+    const answer = answers[question.id];
+    if (question.type === "text" && answer.length > 4000) {
+      return { message: withQuestion(copy.textTooLongError, question), questionId: question.id, target: "input" };
+    }
+    if ((otherAnswers[question.id] || "").length > 1000) {
+      return { message: withQuestion(copy.otherTooLongError, question), questionId: question.id, target: "other" };
+    }
+    if ((answerNotes[question.id] || "").length > 1000) {
+      return { message: withQuestion(copy.answerNoteTooLongError, question), questionId: question.id, target: "answer-note" };
+    }
+    if ((skippedIds || []).includes(question.id)) return null;
+    if ((deferredRequests || []).some((item) => item.question_id === question.id)) return null;
+    if (question.required) {
+      if (question.type === "single" && !answer) {
+        return { message: withQuestion(copy.requiredQuestionError, question), questionId: question.id, target: "input" };
+      }
+      if (question.type === "multi" && answer.length === 0) {
+        return { message: withQuestion(copy.requiredQuestionError, question), questionId: question.id, target: "input" };
+      }
+      if (question.type === "text" && !answer.trim()) {
+        return { message: withQuestion(copy.requiredQuestionError, question), questionId: question.id, target: "input" };
+      }
+    }
+    const hasOther = question.type === "single"
+      ? answer === "__other__"
+      : question.type === "multi" && answer.includes("__other__");
+    if (hasOther && !(otherAnswers[question.id] || "").trim()) {
+      return { message: withQuestion(copy.otherQuestionError, question), questionId: question.id, target: "other" };
+    }
+    return null;
+  };
+
+  const validateAnswers = (collected) => {
+    const activeQuestionIdSet = new Set(collected.activeQuestionIds);
     for (const question of spec.questions) {
-      const answer = answers[question.id];
-      if (question.required) {
-        if (question.type === "single" && !answer) {
-          return { message: withQuestion(copy.requiredQuestionError, question), questionId: question.id, target: "input" };
-        }
-        if (question.type === "multi" && answer.length === 0) {
-          return { message: withQuestion(copy.requiredQuestionError, question), questionId: question.id, target: "input" };
-        }
-        if (question.type === "text" && !answer.trim()) {
-          return { message: withQuestion(copy.requiredQuestionError, question), questionId: question.id, target: "input" };
-        }
-      }
-      const hasOther = question.type === "single"
-        ? answer === "__other__"
-        : question.type === "multi" && answer.includes("__other__");
-      if (hasOther && !(otherAnswers[question.id] || "").trim()) {
-        return { message: withQuestion(copy.otherQuestionError, question), questionId: question.id, target: "other" };
-      }
+      if (!activeQuestionIdSet.has(question.id)) continue;
+      const validationError = validateQuestion(question, collected);
+      if (validationError) return validationError;
     }
     return null;
   };
 
   const clearValidationState = () => {
     error.hidden = true;
-    questionElements.forEach(({ inputs, otherInput, validationMessage }) => {
+    questionElements.forEach(({ inputs, otherInput, answerNoteInput, validationMessage }) => {
       if (validationMessage) validationMessage.hidden = true;
       inputs.forEach((input) => {
         input.removeAttribute("aria-invalid");
@@ -360,6 +610,10 @@
       if (otherInput) {
         otherInput.removeAttribute("aria-invalid");
         otherInput.removeAttribute("aria-describedby");
+      }
+      if (answerNoteInput) {
+        answerNoteInput.removeAttribute("aria-invalid");
+        answerNoteInput.removeAttribute("aria-describedby");
       }
     });
     explanationText.removeAttribute("aria-invalid");
@@ -380,8 +634,13 @@
     }
     const target = validationError.target === "other" && controls.otherInput
       ? controls.otherInput
-      : controls.inputs[0];
+      : validationError.target === "answer-note" && controls.answerNoteInput
+        ? controls.answerNoteInput
+        : controls.inputs[0];
     if (target) {
+      if (validationError.target === "answer-note" && controls.answerNoteDetails) {
+        controls.answerNoteDetails.open = true;
+      }
       target.setAttribute("aria-invalid", "true");
       if (controls.validationMessage) target.setAttribute("aria-describedby", controls.validationMessage.id);
       target.scrollIntoView({ block: "center" });
@@ -395,19 +654,217 @@
     return option ? option.label : value;
   };
 
-  const readableSummary = ({ answers, otherAnswers }) => spec.questions
+  const readableSummary = ({
+    answers,
+    otherAnswers,
+    answerNotes,
+    skippedQuestionIds: skippedIds,
+    deferredExplanationRequests: deferredRequests,
+    activeQuestionIds
+  }) => spec.questions
+    .filter((question) => activeQuestionIds.includes(question.id))
     .map((question) => {
+      if ((skippedIds || []).includes(question.id)) return `- ${question.label}: ${copy.skipped}`;
+      const deferred = (deferredRequests || []).some((item) => item.question_id === question.id);
       const answer = answers[question.id];
+      let visibleAnswer = "—";
       if (question.type === "multi") {
-        const labels = answer.map((value) => optionLabel(question, value, otherAnswers)).join(", ");
-        return `- ${question.label}: ${labels || "—"}`;
+        visibleAnswer = answer.map((value) => optionLabel(question, value, otherAnswers)).join(", ") || "—";
+      } else if (question.type === "single") {
+        visibleAnswer = optionLabel(question, answer, otherAnswers) || "—";
+      } else {
+        visibleAnswer = answer || "—";
       }
-      if (question.type === "single") {
-        return `- ${question.label}: ${optionLabel(question, answer, otherAnswers) || "—"}`;
+      if (deferred) {
+        visibleAnswer = visibleAnswer === "—"
+          ? copy.pendingExplanation
+          : `${visibleAnswer} · ${copy.pendingExplanation}`;
       }
-      return `- ${question.label}: ${answer || "—"}`;
+      const answerNote = answerNotes[question.id];
+      return answerNote
+        ? `- ${question.label}: ${visibleAnswer}\n  - ${copy.answerNoteSummary}: ${answerNote.replace(/\r?\n/g, "\n    ")}`
+        : `- ${question.label}: ${visibleAnswer}`;
     })
     .join("\n");
+
+  const displayAnswer = (
+    question,
+    { answers, otherAnswers, answerNotes, skippedQuestionIds: skippedIds, deferredExplanationRequests: deferredRequests }
+  ) => {
+    if ((skippedIds || []).includes(question.id)) return copy.skipped;
+    const answer = answers[question.id];
+    let visibleAnswer = "—";
+    if (question.type === "multi") {
+      visibleAnswer = answer.map((value) => optionLabel(question, value, otherAnswers)).join(", ") || "—";
+    } else if (question.type === "single") {
+      visibleAnswer = optionLabel(question, answer, otherAnswers) || "—";
+    } else {
+      visibleAnswer = answer || "—";
+    }
+    if ((deferredRequests || []).some((item) => item.question_id === question.id)) {
+      visibleAnswer = visibleAnswer === "—"
+        ? copy.pendingExplanation
+        : `${visibleAnswer} · ${copy.pendingExplanation}`;
+    }
+    const answerNote = answerNotes[question.id];
+    return answerNote
+      ? `${visibleAnswer}\n${copy.answerNoteSummary}: ${answerNote}`
+      : visibleAnswer;
+  };
+
+  const renderReview = () => {
+    const collected = collectAnswers();
+    const activeQuestionIdSet = new Set(collected.activeQuestionIds);
+    reviewList.replaceChildren();
+    spec.questions.filter((question) => activeQuestionIdSet.has(question.id)).forEach((question) => {
+      const term = element("dt", "", question.label);
+      const description = element("dd", "", displayAnswer(question, collected));
+      reviewList.append(term, description);
+    });
+  };
+
+  const focusQuestionControl = (questionIndex) => {
+    const question = spec.questions[questionIndex];
+    const controls = questionElements.get(question.id);
+    const target = controls && controls.inputs[0];
+    if (target) {
+      target.scrollIntoView({ block: "center" });
+      target.focus({ preventScroll: true });
+    }
+  };
+
+  const restoreExplanationForActiveQuestion = () => {
+    if (!isGuided || guidedView === "review") return;
+    const questionId = spec.questions[activeQuestionIndex].id;
+    const isDeferred = deferredExplanationRequests.has(questionId);
+    explanationToggle.checked = isDeferred;
+    explanationText.value = isDeferred
+      ? (deferredExplanationRequests.get(questionId) || "")
+      : "";
+    explanationPanel.hidden = !isDeferred;
+  };
+
+  const syncGuidedView = (focusTarget = false) => {
+    if (!isGuided) return;
+    const onReview = guidedView === "review";
+    const collected = collectAnswers();
+    const activeQuestionIds = collected.activeQuestionIds;
+    const currentQuestionId = spec.questions[activeQuestionIndex].id;
+    const currentPathIndex = activeQuestionIds.indexOf(currentQuestionId);
+    questionElements.forEach(({ section }, questionId) => {
+      section.hidden = onReview || questionId !== currentQuestionId;
+    });
+    review.hidden = !onReview;
+    progress.hidden = false;
+    progress.textContent = onReview
+      ? copy.reviewProgress
+      : hasBranching
+        ? copy.branchProgress.replace("{current}", String(currentPathIndex + 1))
+        : copy.progress
+            .replace("{current}", String(activeQuestionIndex + 1))
+            .replace("{total}", String(spec.questions.length));
+
+    explanationControl.hidden = onReview || !spec.allow_explanation;
+    if (onReview) {
+      explanationToggle.checked = false;
+      explanationPanel.hidden = true;
+      renderReview();
+    }
+
+    const explanationMode = !onReview && spec.allow_explanation && explanationToggle.checked;
+    if (onReview && back.parentElement !== submitControls) submitControls.prepend(back);
+    if (!onReview && back.parentElement !== guidedControls) guidedControls.prepend(back);
+    guidedControls.hidden = onReview || explanationMode;
+    submitControls.hidden = !onReview && !explanationMode;
+    deferExplanation.hidden = !explanationMode
+      || !allowDeferredExplanation
+      || branchSourceIds.has(currentQuestionId);
+    deferExplanation.disabled = false;
+    back.disabled = !onReview && currentPathIndex === 0;
+    back.hidden = false;
+    next.hidden = false;
+    next.disabled = false;
+    skip.hidden = onReview || !spec.questions[activeQuestionIndex].allow_skip;
+    skip.disabled = false;
+    submit.textContent = currentActionLabel();
+
+    if (focusTarget) {
+      if (onReview) {
+        submit.scrollIntoView({ block: "center" });
+        submit.focus({ preventScroll: true });
+      } else if (explanationMode) {
+        explanationText.scrollIntoView({ block: "center" });
+        explanationText.focus({ preventScroll: true });
+      } else {
+        focusQuestionControl(activeQuestionIndex);
+      }
+    }
+  };
+
+  const clearQuestionAnswer = (question) => {
+    const controls = questionElements.get(question.id);
+    controls.inputs.forEach((input) => {
+      if (question.type === "text") input.value = "";
+      else input.checked = false;
+    });
+    if (controls.otherInput) controls.otherInput.value = "";
+    if (controls.answerNoteInput) controls.answerNoteInput.value = "";
+    if (controls.answerNoteDetails) controls.answerNoteDetails.open = false;
+    if (controls.syncOtherVisibility) controls.syncOtherVisibility(false);
+    if (controls.syncAnswerNoteVisibility) controls.syncAnswerNoteVisibility();
+  };
+
+  const reconcileBranchPath = (nextActiveQuestionIds) => {
+    if (!hasBranching) return;
+    const nextActiveSet = new Set(nextActiveQuestionIds);
+    const removedIds = activePathSnapshot.filter((questionId) => !nextActiveSet.has(questionId));
+    removedIds.forEach((questionId) => {
+      const question = spec.questions.find((candidate) => candidate.id === questionId);
+      if (!question) return;
+      clearQuestionAnswer(question);
+      skippedQuestionIds.delete(questionId);
+      deferredExplanationRequests.delete(questionId);
+      const controls = questionElements.get(questionId);
+      if (controls) {
+        if (controls.validationMessage) controls.validationMessage.hidden = true;
+        controls.inputs.forEach((input) => {
+          input.removeAttribute("aria-invalid");
+          input.removeAttribute("aria-describedby");
+        });
+        if (controls.otherInput) {
+          controls.otherInput.removeAttribute("aria-invalid");
+          controls.otherInput.removeAttribute("aria-describedby");
+        }
+        if (controls.answerNoteInput) {
+          controls.answerNoteInput.removeAttribute("aria-invalid");
+          controls.answerNoteInput.removeAttribute("aria-describedby");
+        }
+      }
+    });
+    if (activePathSnapshot.length > 0
+      && activePathSnapshot.join("\u0000") !== nextActiveQuestionIds.join("\u0000")) {
+      branchStatus.textContent = "";
+      window.setTimeout(() => {
+        branchStatus.textContent = copy.branchChanged;
+      }, 0);
+    }
+    activePathSnapshot = [...nextActiveQuestionIds];
+  };
+
+  const advanceGuided = () => {
+    const activeQuestionIds = collectAnswers().activeQuestionIds;
+    const currentQuestionId = spec.questions[activeQuestionIndex].id;
+    const currentPathIndex = activeQuestionIds.indexOf(currentQuestionId);
+    if (currentPathIndex === activeQuestionIds.length - 1) {
+      guidedView = "review";
+    } else {
+      activeQuestionIndex = spec.questions.findIndex(
+        (question) => question.id === activeQuestionIds[currentPathIndex + 1]
+      );
+    }
+    if (guidedView !== "review") restoreExplanationForActiveQuestion();
+    syncGuidedView(true);
+  };
 
   const createSubmissionId = () => {
     if (window.crypto && typeof window.crypto.randomUUID === "function") {
@@ -417,7 +874,15 @@
   };
 
   spec.questions.forEach(renderQuestion);
-  questionElements.forEach(({ question, inputs, otherInput, syncOtherVisibility }, questionId) => {
+  questionElements.forEach(({
+    question,
+    inputs,
+    otherInput,
+    answerNoteInput,
+    answerNoteDetails,
+    syncOtherVisibility,
+    syncAnswerNoteVisibility
+  }, questionId) => {
     if (!Object.prototype.hasOwnProperty.call(spec.initial_answers || {}, questionId)) return;
     const initial = spec.initial_answers[questionId];
     if (question.type === "text") {
@@ -430,18 +895,37 @@
     });
     if (otherInput) otherInput.value = (spec.initial_other_answers || {})[questionId] || "";
     if (syncOtherVisibility) syncOtherVisibility(false);
+    if (answerNoteInput) {
+      answerNoteInput.value = (spec.initial_answer_notes || {})[questionId] || "";
+      if (answerNoteDetails && answerNoteInput.value) answerNoteDetails.open = true;
+    }
+    if (syncAnswerNoteVisibility) syncAnswerNoteVisibility();
   });
+  activePathSnapshot = collectAnswers().activeQuestionIds;
   explanationControl.hidden = !spec.allow_explanation;
-  explanationToggleLabel.textContent = copy.needExplanation;
+  explanationToggleLabel.textContent = isGuided
+    ? copy.needExplanationGuided
+    : copy.needExplanation;
   explanationLabel.textContent = copy.explanationLabel;
   explanationText.placeholder = copy.explanationPlaceholder;
   explanationText.maxLength = 2000;
   submit.textContent = spec.submit_label || copy.sendAnswers;
+  deferExplanation.textContent = copy.deferExplanation;
+  back.textContent = copy.back;
+  skip.textContent = copy.skip;
+  next.textContent = copy.next;
+  reviewHeading.textContent = copy.reviewHeading;
+  reviewHint.textContent = copy.reviewHint;
   root.setAttribute("data-choice-board-delivery-state", "idle");
+  root.setAttribute("data-choice-board-presentation", isGuided ? "stepper" : "compact");
 
-  const currentActionLabel = () => explanationToggle.checked
-    ? copy.sendExplanation
-    : (spec.submit_label || copy.sendAnswers);
+  const currentActionLabel = () => {
+    if (isGuided && guidedView === "review" && deferredExplanationRequests.size > 0) {
+      return copy.sendAnswersAndExplanation;
+    }
+    if (explanationToggle.checked) return copy.sendExplanation;
+    return spec.submit_label || copy.sendAnswers;
+  };
 
   const resetPendingAfterEdit = () => {
     clearValidationState();
@@ -458,13 +942,133 @@
   };
 
   explanationToggle.addEventListener("change", () => {
+    if (isGuided && !explanationToggle.checked) {
+      const questionId = spec.questions[activeQuestionIndex].id;
+      deferredExplanationRequests.delete(questionId);
+      explanationText.value = "";
+    }
     explanationPanel.hidden = !explanationToggle.checked;
     resetPendingAfterEdit();
     submit.textContent = currentActionLabel();
+    if (isGuided) syncGuidedView(false);
     if (explanationToggle.checked) explanationText.focus();
   });
 
-  form.addEventListener("input", resetPendingAfterEdit);
+  explanationText.addEventListener("input", () => {
+    if (isGuided && explanationToggle.checked) {
+      const questionId = spec.questions[activeQuestionIndex].id;
+      if (deferredExplanationRequests.has(questionId)) {
+        deferredExplanationRequests.set(questionId, explanationText.value);
+      }
+    }
+  });
+
+  form.addEventListener("input", (event) => {
+    if (isGuided) {
+      questionElements.forEach(({ section }, questionId) => {
+        if (section.contains(event.target)) skippedQuestionIds.delete(questionId);
+      });
+    }
+    resetPendingAfterEdit();
+  });
+
+  form.addEventListener("change", (event) => {
+    if (!hasBranching) return;
+    const section = event.target.closest(".choice-board-question");
+    if (!section || !branchSourceIds.has(section.dataset.questionId)) return;
+    reconcileBranchPath(collectAnswers().activeQuestionIds);
+    syncGuidedView(false);
+  });
+
+  back.addEventListener("click", () => {
+    if (!isGuided || submitting) return;
+    resetPendingAfterEdit();
+    const activeQuestionIds = collectAnswers().activeQuestionIds;
+    if (guidedView === "review") {
+      guidedView = "question";
+      activeQuestionIndex = spec.questions.findIndex(
+        (question) => question.id === activeQuestionIds[activeQuestionIds.length - 1]
+      );
+    } else {
+      const currentQuestionId = spec.questions[activeQuestionIndex].id;
+      const currentPathIndex = activeQuestionIds.indexOf(currentQuestionId);
+      if (currentPathIndex > 0) {
+        activeQuestionIndex = spec.questions.findIndex(
+          (question) => question.id === activeQuestionIds[currentPathIndex - 1]
+        );
+      }
+    }
+    restoreExplanationForActiveQuestion();
+    syncGuidedView(true);
+  });
+
+  skip.addEventListener("click", () => {
+    if (!isGuided || submitting) return;
+    const question = spec.questions[activeQuestionIndex];
+    if (!question.allow_skip) return;
+    clearQuestionAnswer(question);
+    deferredExplanationRequests.delete(question.id);
+    explanationToggle.checked = false;
+    explanationText.value = "";
+    explanationPanel.hidden = true;
+    skippedQuestionIds.add(question.id);
+    reconcileBranchPath(collectAnswers().activeQuestionIds);
+    resetPendingAfterEdit();
+    advanceGuided();
+  });
+
+  deferExplanation.addEventListener("click", () => {
+    if (!isGuided || !allowDeferredExplanation || submitting) return;
+    if (explanationText.value.length > 2000) {
+      clearValidationState();
+      error.textContent = copy.explanationTooLongError;
+      error.hidden = false;
+      focusValidationError({ questionId: null, target: "explanation" });
+      return;
+    }
+    const questionId = spec.questions[activeQuestionIndex].id;
+    if (branchSourceIds.has(questionId)) return;
+    skippedQuestionIds.delete(questionId);
+    deferredExplanationRequests.set(questionId, explanationText.value);
+    resetPendingAfterEdit();
+    advanceGuided();
+  });
+
+  next.addEventListener("click", () => {
+    if (!isGuided || submitting) return;
+    const collected = collectAnswers();
+    const validationError = validateQuestion(spec.questions[activeQuestionIndex], collected);
+    if (validationError) {
+      clearValidationState();
+      error.textContent = validationError.message;
+      error.hidden = false;
+      if (isGuided && validationError.questionId) {
+        activeQuestionIndex = spec.questions.findIndex((question) => question.id === validationError.questionId);
+        guidedView = "question";
+        restoreExplanationForActiveQuestion();
+        syncGuidedView(false);
+      }
+      focusValidationError(validationError);
+      return;
+    }
+    resetPendingAfterEdit();
+    advanceGuided();
+  });
+
+  if (isGuided) {
+    guidedControls.hidden = false;
+    restoreExplanationForActiveQuestion();
+    syncGuidedView(false);
+    const hasRestoredDraft = Object.keys(spec.initial_answers || {}).length > 0
+      || skippedQuestionIds.size > 0
+      || deferredExplanationRequests.size > 0;
+    if (hasRestoredDraft || spec.initial_question_id !== spec.questions[0].id) {
+      window.setTimeout(() => {
+        if (explanationToggle.checked) explanationText.focus();
+        else focusQuestionControl(activeQuestionIndex);
+      }, 0);
+    }
+  }
 
   if (!window.openai || typeof window.openai.sendFollowUpMessage !== "function") {
     submit.disabled = true;
@@ -477,8 +1081,15 @@
     if (submitting) return;
 
     const collected = collectAnswers();
-    const needsExplanation = spec.allow_explanation && explanationToggle.checked;
-    const validationError = needsExplanation
+    const needsImmediateExplanation = spec.allow_explanation
+      && explanationToggle.checked
+      && (!isGuided || guidedView !== "review");
+    const needsDeferredExplanation = isGuided
+      && guidedView === "review"
+      && collected.deferredExplanationRequests.length > 0;
+    const needsExplanation = needsImmediateExplanation || needsDeferredExplanation;
+    if (isGuided && !needsExplanation && guidedView !== "review") return;
+    const validationError = needsImmediateExplanation
       ? (
           explanationText.value.length > 2000
             ? { message: copy.explanationTooLongError, questionId: null, target: "explanation" }
@@ -489,31 +1100,77 @@
       clearValidationState();
       error.textContent = validationError.message;
       error.hidden = false;
+      if (isGuided && validationError.questionId) {
+        activeQuestionIndex = spec.questions.findIndex((question) => question.id === validationError.questionId);
+        guidedView = "question";
+        restoreExplanationForActiveQuestion();
+        syncGuidedView(false);
+      }
       focusValidationError(validationError);
       return;
     }
 
+    const activeQuestionId = isGuided
+      ? spec.questions[activeQuestionIndex].id
+      : null;
+    const deferredForPayload = needsImmediateExplanation
+      ? collected.deferredExplanationRequests.filter(
+          (item) => item.question_id !== activeQuestionId
+        )
+      : collected.deferredExplanationRequests;
+    const summaryCollected = Object.assign({}, collected, {
+      deferredExplanationRequests: deferredForPayload
+    });
     const payloadCore = needsExplanation
       ? {
-          schema_version: 1,
+          schema_version: spec.schema_version,
           kind: "choice_board_explanation_request",
           form_id: spec.form_id,
-          request: explanationText.value,
+          request: needsImmediateExplanation ? explanationText.value : "",
           draft_answers: collected.answers,
-          draft_other_answers: collected.otherAnswers
+          draft_other_answers: collected.otherAnswers,
+          ...(hasAnswerNoteSupport ? { draft_answer_notes: collected.answerNotes } : {}),
+          ...(spec.completion_parent ? { completion_parent: spec.completion_parent } : {}),
+          ...(isGuided ? {
+            draft_skipped_question_ids: collected.skippedQuestionIds,
+            explanation_mode: needsImmediateExplanation ? "pause_now" : "after_completion",
+            deferred_explanation_requests: deferredForPayload,
+            presentation: spec.presentation,
+            flow_digest: spec.flow_digest,
+            ...(hasBranching ? { active_question_ids: collected.activeQuestionIds } : {}),
+            active_question_id: needsImmediateExplanation
+              ? activeQuestionId
+              : deferredForPayload[0].question_id
+          } : {})
         }
       : {
-          schema_version: 1,
+          schema_version: spec.schema_version,
           kind: "choice_board_submission",
           form_id: spec.form_id,
           answers: collected.answers,
-          other_answers: collected.otherAnswers
+          other_answers: collected.otherAnswers,
+          ...(hasAnswerNoteSupport ? { answer_notes: collected.answerNotes } : {}),
+          ...(spec.completion_parent ? { completion_parent: spec.completion_parent } : {}),
+          ...(isGuided ? {
+            skipped_question_ids: collected.skippedQuestionIds,
+            presentation: spec.presentation,
+            flow_digest: spec.flow_digest,
+            ...(hasBranching ? { active_question_ids: collected.activeQuestionIds } : {})
+          } : {})
         };
     const marker = needsExplanation ? "CHOICE_BOARD_EXPLANATION_REQUEST" : "CHOICE_BOARD_SUBMISSION";
     const heading = needsExplanation ? copy.explanationHeading : copy.responseHeading;
-    const summary = needsExplanation
-      ? `${explanationText.value || copy.needExplanation}\n\n${copy.draftHeading}\n${readableSummary(collected)}`
-      : readableSummary(collected);
+    const deferredSummary = deferredForPayload
+      .map((item) => {
+        const question = spec.questions.find((candidate) => candidate.id === item.question_id);
+        return `- ${question.label}: ${item.request || copy.generalExplanation}`;
+      })
+      .join("\n");
+    const summary = needsImmediateExplanation
+      ? `${explanationText.value || copy.generalExplanation}\n\n${copy.draftHeading}\n${readableSummary(summaryCollected)}`
+      : needsDeferredExplanation
+        ? `${copy.deferredHeading}\n${deferredSummary}\n\n${copy.draftHeading}\n${readableSummary(summaryCollected)}`
+        : readableSummary(collected);
     const fingerprint = JSON.stringify(payloadCore);
     if (!pendingEnvelope || pendingEnvelope.fingerprint !== fingerprint) {
       const payload = Object.assign(
@@ -521,7 +1178,22 @@
         payloadCore,
         { submission_id: createSubmissionId() }
       );
-      const prompt = `${heading}\n\n${summary}\n\n${marker}\n${JSON.stringify(payload)}`;
+      const prompt = [
+        heading,
+        "",
+        summary,
+        "",
+        "---",
+        "",
+        `**${copy.modelDataHeading}**`,
+        "",
+        copy.modelDataHint,
+        "",
+        "```text",
+        marker,
+        JSON.stringify(payload),
+        "```"
+      ].join("\n");
       pendingEnvelope = { fingerprint, heading, prompt };
     }
 
@@ -531,6 +1203,12 @@
     status.classList.remove("text-destructive");
     status.textContent = copy.sending;
     submit.disabled = true;
+    deferExplanation.disabled = true;
+    if (isGuided) {
+      back.disabled = true;
+      skip.disabled = true;
+      next.disabled = true;
+    }
     root.setAttribute("data-choice-board-delivery-state", "in-flight");
     try {
       const result = await window.openai.sendFollowUpMessage({
@@ -552,6 +1230,7 @@
     } finally {
       submitting = false;
       submit.disabled = false;
+      if (isGuided) syncGuidedView(false);
       if (editedDuringFlight) {
         pendingEnvelope = null;
         status.classList.remove("text-destructive");

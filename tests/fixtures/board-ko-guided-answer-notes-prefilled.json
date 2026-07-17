@@ -1,0 +1,55 @@
+{
+  "schema_version": 2,
+  "presentation": "stepper",
+  "form_id": "answer-notes-guided-ko",
+  "locale": "ko",
+  "allow_explanation": true,
+  "initial_question_id": "checks",
+  "initial_answers": {
+    "direction": "deep",
+    "checks": ["quality", "__other__"],
+    "finish": "two"
+  },
+  "initial_other_answers": {
+    "checks": "유지보수"
+  },
+  "initial_answer_notes": {
+    "direction": "시간이 조금 더 걸려도 괜찮아요.",
+    "checks": "기존 사용 흐름은 바꾸지 않았으면 해요."
+  },
+  "questions": [
+    {
+      "id": "direction",
+      "type": "single",
+      "label": "어떤 방향이 더 좋나요?",
+      "required": true,
+      "allow_answer_note": true,
+      "options": [
+        { "value": "simple", "label": "간단하게" },
+        { "value": "deep", "label": "깊이 있게" }
+      ]
+    },
+    {
+      "id": "checks",
+      "type": "multi",
+      "label": "함께 챙길 점을 골라 주세요.",
+      "required": true,
+      "allow_other": true,
+      "allow_answer_note": true,
+      "options": [
+        { "value": "scope", "label": "범위" },
+        { "value": "quality", "label": "완성도" }
+      ]
+    },
+    {
+      "id": "finish",
+      "type": "single",
+      "label": "마지막 결과는 어떤 모양이 좋나요?",
+      "required": true,
+      "options": [
+        { "value": "one", "label": "한 가지 권장안" },
+        { "value": "two", "label": "두 가지 비교안" }
+      ]
+    }
+  ]
+}

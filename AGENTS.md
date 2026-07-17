@@ -1,65 +1,78 @@
-# Choice Board for Codex — 작업 계약
+# Choice Board for Codex — Repository Instructions
 
-## 역할
+## Purpose
 
-이 저장소는 Codex Desktop 안에서 단일 선택, 복수 선택, 직접 입력을 한 화면에 표시하고 결과를 현재 대화로 돌려주는 비공식 커뮤니티 스킬을 만든다.
+This repository develops an unofficial community skill that collects single,
+multiple, and free-text answers in an inline Codex Desktop board and requests a
+validated follow-up in the current conversation.
 
-현재 단계는 `working live prototype / recovery validation`이다. 일반 제출은 실사용 검증됐지만 취소·재시도·설명 복원 경로는 수정 뒤 live 재검증이 남아 있으며, 공개 배포 준비가 끝난 제품은 아니다.
+## Supported boundary
 
-## 현재 고정 경계
+- Product name: `Choice Board for Codex`
+- Skill name and folder: `codex-choice-board`
+- Supported interactive host: Codex Desktop with the Visualize plugin
+- Mobile behavior: plain-text fallback; never claim interactive rendering
+- Question types: `single`, `multi`, and `text`
+- Presentation: compact for 1–3 fixed questions, guided for longer fixed flows,
+  and bounded one-layer branching only when a prewritten later question is
+  genuinely inapplicable on at least one earlier-single route
+- Transport: `window.openai.sendFollowUpMessage({ prompt, title })`
+- Persistence: no answer database or server; only the user-controlled activation
+  preference may be stored locally
 
-- 제품 표시명: `Choice Board for Codex`
-- 저장소: `MJL-ren/Choice-Board-for-Codex`
-- 예정 스킬 이름: `codex-choice-board`
-- 첫 지원 표면: Codex Desktop Default mode의 thread-scoped Visualize
-- 첫 질문 유형: `single`, `multi`, `text`
-- 반환 방식: `window.openai.sendFollowUpMessage({ prompt, title })`로 현재 대화 메시지를 요청하고, 실제 도착한 envelope만 검증
-- 기본 활성화: 명시 호출 전용. 사용자가 직접 바꾼 경우에만 `suggest` 또는 `auto`
-- 기본 UX: 모든 선택 질문에 `기타`, 보드 전체에 `선택 전 설명 요청`
-- 테마: Codex/Visualize의 host theme와 native control을 따르며 자체 색상 체계를 만들지 않는다.
-- 외부 서버, localhost, 터널, MCP, DB를 사용하지 않는다. 답변과 폼 상태는 영구 저장하지 않으며 활성화 선호만 로컬에 저장한다.
-- 질문을 만든 업무 스킬과 범용 보드 renderer의 책임을 분리한다.
-- 민감정보, 비밀키, 고객 원문을 보드 입력으로 받지 않는다.
+Do not add MCP, localhost services, external requests, nested predicates,
+model-generated branch questions, or a general survey-builder surface without a
+separate design decision.
 
-## 지금 하지 않을 것
-
-- 민재의 명시 승인 없이 설치본을 갱신하거나 실제 Visualize 보드를 새로 실행하지 않는다.
-- BSA를 비롯한 외부 프로젝트 파일과 기존 fallback을 수정하지 않는다.
-- 원격 저장소를 공개로 전환하거나 commit·push·release하지 않는다.
-- Codex CLI, VS Code, Apps SDK 또는 MCP 호환을 이미 지원한다고 표현하지 않는다.
-
-## 소유 구조
+## Repository layout
 
 ```text
-skills/codex-choice-board/  설치 가능한 스킬 본체
-examples/                   민감정보 없는 공개 예시
-tests/                      schema, escaping, rendering과 반환 계약 검증
-docs/                       설계·결정·호환성·테스트 기록
+skills/codex-choice-board/  Installable skill
+examples/                   Non-sensitive public examples
+tests/                      Schema, rendering, browser, and return-contract tests
+docs/                       Product decisions and validation records
 ```
 
-필요한 파일만 유지하고 생성 HTML, 사용자 답변, 개인 설정을 저장소에 넣지 않는다.
+Generated HTML, task-specific JSON, user answers, screenshots containing private
+data, task IDs, and benchmark run directories must not be committed.
 
-## 구현 원칙
+## Implementation rules
 
-- SKILL.md는 실행에 필요한 절차만 간결하게 유지한다. 상세 schema와 호환성 정보는 `references/`로 분리한다.
-- 정적 fragment asset은 화면 동작을 소유하고, 작은 renderer script는 canonical schema 검증과 안전한 data 주입만 담당한다.
-- 자유 입력과 label은 HTML 및 follow-up prompt에 삽입하기 전에 data로 escape한다.
-- 수신 세션은 marker, schema version, form ID, question ID, answer type과 option value를 다시 검증한다.
-- JSON을 정본, 읽기 쉬운 요약을 표시용으로 다루며 불일치는 fail closed 한다.
-- fulfilled host call을 전달 완료로 포장하지 않고, 동일 `submission_id`의 수동 재시도와 수신 중복 제거를 사용한다.
-- 한 번에 활성 보드 하나, 기본 전송 버튼 하나, in-flight 요청 한 건을 V0 상한으로 둔다.
+- Keep `SKILL.md` concise and put detailed contracts in `references/`.
+- Treat canonical JSON as the runtime authority. Internal Board Draft input must
+  compile into canonical JSON before rendering.
+- Keep the static HTML fragment responsible for interaction and the Python
+  renderer responsible for deterministic validation and safe data injection.
+- Escape labels and free text before insertion into HTML or follow-up prompts.
+- Validate markers, schema versions, form and question IDs, answer types, option
+  values, flow identity, and active branch paths again after a callback arrives.
+- Preserve the readable-summary / machine-payload separation. A mismatch fails
+  closed.
+- Do not treat a fulfilled host call as delivery confirmation. Keep explicit
+  byte-identical retry and duplicate/conflict checks.
+- Keep hidden branch state clear-only and recompute `active_question_ids` from
+  canonical data.
 
-## 검증 경계
+## Validation
 
-- 정적 검증과 실제 Codex Desktop end-to-end 검증을 구분한다.
-- 정적 검증: schema, 안전한 data 주입, 필수값, 접근성 표식, 중복 제출 guard.
-- 실제 검증: 현재 대화로의 단일 follow-up, 실패 복구, Unicode·줄바꿈 보존, host API 존재 여부.
-- 실제 화면 검증: 320/736px layout과 Codex 라이트·다크 테마 추종.
-- 실제 live 검증은 민재가 명시한 범위와 보드 수 안에서만 진행한다.
-- 성공하지 않은 부분을 완료나 지원으로 표시하지 않는다.
+Run the relevant checks after changes:
 
-## Git과 공개 경계
+```powershell
+python -m unittest discover -s tests -p "test_*.py" -v
+python -X utf8 path/to/skill-creator/scripts/quick_validate.py skills/codex-choice-board
+```
 
-- 기존 변경을 덮어쓰거나 정리하지 않는다.
-- commit, push, tag, release와 공개 전환은 민재가 명시적으로 요청할 때만 한다.
-- 공개 전 README의 비공식 프로젝트 표기, LICENSE, 지원 범위와 실제 검증 결과를 다시 확인한다.
+Use the browser commands in `docs/TESTING.md` for UI or state changes. Distinguish
+local static/browser checks from a real Codex Desktop callback. Never describe an
+untested surface as supported.
+
+## Change and release safety
+
+- Preserve unrelated working-tree changes.
+- Do not update a user's installed skill copy, open a live Visualize board,
+  commit, push, tag, publish, or change repository visibility unless the owner
+  explicitly requests that action.
+- Keep credentials, personal data, private task transcripts, and local benchmark
+  evidence out of Git.
+- Before a public release, verify installation from a clean checkout and confirm
+  that README claims match the actual supported surfaces.

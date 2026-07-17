@@ -40,7 +40,7 @@ class ActivationTests(unittest.TestCase):
             yaml_path.write_text(SOURCE_YAML.read_text(encoding="utf-8"), encoding="utf-8")
             settings = Path(directory) / "settings.json"
 
-            for mode, allowed in (("suggest", True), ("auto", True), ("explicit", False)):
+            for mode, allowed in (("suggest", True), ("auto", True), ("explicit", True)):
                 result = self.run_mode(mode, skill_dir, settings)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 payload = json.loads(result.stdout)
@@ -96,7 +96,11 @@ class ActivationTests(unittest.TestCase):
             skill_dir = Path(directory) / "skill"
             agents = skill_dir / "agents"
             agents.mkdir(parents=True)
-            (agents / "openai.yaml").write_text(SOURCE_YAML.read_text(encoding="utf-8"), encoding="utf-8")
+            mismatched_yaml = SOURCE_YAML.read_text(encoding="utf-8").replace(
+                "allow_implicit_invocation: true",
+                "allow_implicit_invocation: false",
+            )
+            (agents / "openai.yaml").write_text(mismatched_yaml, encoding="utf-8")
             settings = Path(directory) / "settings.json"
             settings.write_text(
                 json.dumps({"schema_version": 1, "activation_mode": "auto"}),
