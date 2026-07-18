@@ -9,7 +9,7 @@
   "fixture_sha256": "f45c4fdcf4cf89269427f4ceea91b8c8b74cd90c117aec4080651b44e9d7b919",
   "golden_file_sha256": "c339df74a9eab7fe630a1937eb533d4e814b7fdfd572286c31da98910d49c45b",
   "golden_canonical_sha256": "b3fd29b4f24f8e0a8bbe14c88bc4292b1b166a8998746fbc395dade4951eacee",
-  "renderer_sha256": "3369aecd932d96c569e2f6a183c3a0d7a2d1262972d7b8f717b902e17732f374",
+  "renderer_sha256": "d506cc0d5f7a34ec8bb506c67b4cb9e196d747b532b5fea334785e8a69e6f3c0",
   "template_sha256": "ef13c33e84a82e510712048277e811079113b6033dbf00a3b17bba8e3df5b1f2",
   "authority_source_bytes": 3030,
   "fixture_source_bytes": 2651,

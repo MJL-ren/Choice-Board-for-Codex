@@ -4,14 +4,49 @@ Last checked: 2026-07-18
 
 Live Codex Desktop findings and the current edge-path test plan are recorded in [`LIVE_TEST_FINDINGS_2026-07-16.md`](LIVE_TEST_FINDINGS_2026-07-16.md).
 
+## Public release baseline
+
+Public baseline commit `7382e2a311ab943bed291d6317b9bc0cc610066b` was
+pushed to `main` and made publicly readable on 2026-07-18. Before the visibility
+change, a fresh clone passed dependency installation, sixty public Python tests,
+the official skill validator, all five browser suites, and payload validation
+after installation into an isolated skill destination. The public URL was then
+rechecked without repository authentication.
+
 ## Passed locally
 
 - Skill structure validation with the official skill validator.
-- Sixty public Python tests covering schema rejection, safe rendering, strict types, marker-safe labels, compact and guided initial-draft validation, answer-note opt-in and restored-state validation, explicit guided skip/deferred state, parent-linked completion boards, fixed guided flow identity, fail-closed activation modes, internal Draft compilation, the 5/10/15 authoring benchmark, bounded branch normalization, restore, sibling fan-out, receiver-parity and fixed-digest oracles, compact three-question enforcement, thirty-question guided authoring, and unsupported-locale English fallback.
+- Seventy-two public Python tests covering schema rejection, safe rendering,
+  strict canonical loading, full returned-envelope validation, marker-safe
+  labels, compact and guided initial-draft validation, answer-note opt-in and
+  restored-state validation, explicit guided skip/deferred state, parent-linked
+  completion boards, fixed guided flow identity, fail-closed activation modes,
+  internal Draft compilation, the 5/10/15 authoring benchmark, bounded branch
+  normalization, restore, sibling fan-out, exact hidden-state checks,
+  receiver-parity and fixed-digest oracles, compact three-question enforcement,
+  thirty-question guided authoring, and unsupported-locale English fallback.
 - Activation tests verify that natural-language discovery remains enabled in `explicit`, `suggest`, and `auto`, while the validated inner mode still fails closed to direct requests when settings are missing, invalid, or inconsistent.
 - The shipped internal Draft compiler now verifies exact equivalence with direct canonical authoring, deterministic repeated output, duplicate-key and non-finite-number rejection, unknown state/branch-field rejection, malformed-pair rejection, and preservation of an existing destination after a failed compile.
 - The authoring benchmark records twelve first-pass target runs across two counterbalanced pairs each at 5, 10, and 15 logical questions. Every pair produced exact canonical and rendered equality. Minimal Draft used about 15% fewer semantic input bytes and showed a modest local authoring-time signal, but pair noise prevents any speed guarantee. The public aggregate is in [`../tests/authoring_benchmark/RESULTS.md`](../tests/authoring_benchmark/RESULTS.md).
 - The bounded branch runtime accepts only one-layer earlier-single `show_if`, canonicalizes `answer_in`, preserves the exact fixed-guided digest, clears hidden state without revival, and independently recomputes returned active paths.
+- Direct canonical rendering now rejects duplicate JSON keys, non-finite
+  numbers, and unknown top-level, question, and option fields instead of
+  silently applying defaults.
+- The executable returned-envelope validator checks exact marker and form
+  identity, complete question-key sets, answer types and values, Other and note
+  state, guided Skip/deferred state, flow identity, bounded branch paths,
+  completion parents, readable-summary parity, and duplicate/conflicting
+  submission IDs. Negative tests cover missing hidden keys and wrong neutral
+  types.
+- CI runs the hash-pinned OpenAI skill validator on Ubuntu and a separate
+  Windows renderer, callback, branch, and activation smoke job.
+- A read-only local retention check on 2026-07-18 found 21 Choice Board HTML
+  files and 21 canonical JSON files in the host visualization directory. Five
+  JSON files contained non-empty restored state, and 32 of the 42 artifacts
+  predated the earliest active Codex/ChatGPT process. This confirms that the
+  host may retain board state across an app process boundary; no answer values
+  were printed and no artifacts were deleted. The public contract therefore
+  documents host-controlled retention instead of promising automatic cleanup.
 - Headless Chrome behavior smoke test covering:
   - required-answer errors and focus movement;
   - `Other` show/hide behavior without deleting typed text;
@@ -76,12 +111,11 @@ npm run test:browser
 To use an existing local Chrome instead of downloading Playwright Chromium, set
 `CHOICE_BOARD_BROWSER` to the browser executable before the final command.
 
-## Still required before release
+## Remaining validation after public preview
 
 - Activation metadata reload behavior after changing `explicit`, `suggest`, or `auto` in an installed copy.
 - Whether an untagged natural-language “use a choice board” request is treated as an explicit invocation; until verified, `$codex-choice-board` is the guaranteed call form.
 - Representative live validation of the conservative automatic branch-selection rule. The one-layer runtime is validated, but automatic model routing has not yet been exercised across several unrelated real requests.
-- Clean installation from the public GitHub URL after the prepared changes are committed and pushed.
 - Practical host-message behavior beyond the tested thirty-question guided flow; the skill no longer imposes an arbitrary fixed count, but unusually large free-text boards may still meet host or fragment-size limits.
 
 ## Confirmed live
@@ -93,7 +127,11 @@ To use an existing local Chrome instead of downloading Playwright Chromium, set
 - The patched cancellation state preserved the visible draft, reported delivery as unconfirmed, and exposed a retry-the-same-content action instead of locking the board.
 - The explicit retry produced an explanation callback whose readable summary contained every selected label.
 - The replacement board restored all draft choices, and its final canonical submission matched the explanation draft.
-- A mirrored mobile view displayed the raw visualization directive rather than the board. Mobile interactive rendering is therefore recorded as unavailable; text is the fallback.
+- On July 16, a mirrored mobile view displayed the raw visualization directive
+  and could not install Visualize. OpenAI now documents a rollout to eligible
+  mobile accounts, so this remains a dated observation rather than a permanent
+  platform claim. Text fallback remains the supported behavior until an
+  eligible account passes a new live check; no support date is promised.
 - The first fixed-guided schema-version-2 board returned one complete five-question submission to the same conversation. Form ID, presentation, question IDs, answer types, option values, readable labels, submission ID, and flow digest all validated.
 - The live callback verifies final guided delivery, and the live tester independently confirmed Back preservation. A later combined run returned a canonical immediate explanation request after a required question was skipped, revisited, and answered; its skipped-ID list was empty, proving replacement.
 - A six-question guided run deferred one required question until review, returned the other five answers once, explained only the deferred question, rendered a one-question compact completion board, and accepted its answer with an exact matching parent form ID, explanation-request submission ID, and flow digest. The final answer merged without re-asking or resubmitting the completed questions.

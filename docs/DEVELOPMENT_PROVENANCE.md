@@ -10,8 +10,11 @@ submitted to a competition.
 - The initial delivery-recovery hardening commit followed on July 16 at 9:04 PM
   KST.
 - Compact, guided, deferred-explanation, answer-note, internal Draft, and bounded
-  branching work in the current public candidate was developed after those
+  branching work in the public preview baseline was developed after those
   commits.
+- Public preview baseline commit `7382e2a311ab943bed291d6317b9bc0cc610066b`
+  was pushed and made publicly readable on July 18, 2026 after clean-clone,
+  isolated-install, Python, official skill-validator, and browser gates passed.
 
 The repository therefore began during the event's submission period. If it is
 submitted, the final commit history and primary Codex `/feedback` session ID
@@ -45,8 +48,8 @@ The current official sources are the [event overview](https://openai.devpost.com
 
 Before any submission:
 
-- [ ] Commit and push the public candidate.
-- [ ] Verify a clean GitHub installation in a fresh Codex task.
+- [x] Commit and push the public preview baseline.
+- [x] Verify an anonymous clean clone and isolated GitHub skill installation.
 - [ ] Confirm the Visualize prerequisite is available to a clean judge account,
       or provide an equally clear fallback testing path.
 - [ ] Record an English, public, under-three-minute YouTube demo with audio.

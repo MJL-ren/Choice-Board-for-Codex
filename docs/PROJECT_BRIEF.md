@@ -3,8 +3,16 @@
 - Project: `Choice Board for Codex`
 - Repository: `MJL-ren/Choice-Board-for-Codex`
 - Planned skill name: `codex-choice-board`
-- Phase: `public preview candidate / fixed-guided, answer notes, and bounded branching live validated`
+- Phase: `public preview / fixed-guided, answer notes, and bounded branching live validated`
 - Last reviewed: 2026-07-18
+
+## Public preview baseline
+
+- Public baseline commit: `7382e2a311ab943bed291d6317b9bc0cc610066b`
+- Published to `main` and made publicly readable on 2026-07-18.
+- A fresh anonymous clone, dependency install, sixty public Python tests,
+  official skill validation, five browser suites, and an isolated skill-folder
+  installation all passed before public visibility was enabled.
 
 ## Problem
 
@@ -96,7 +104,7 @@ CHOICE_BOARD_SUBMISSION
 {"schema_version":1,"kind":"choice_board_submission","form_id":"choice-board-spike-001","answers":{"route":"handoff","checks":["scope","evidence"],"note":"Example"},"other_answers":{},"submission_id":"cb-00000000-0000-4000-8000-000000000000"}
 ```
 
-The follow-up starts with a short readable summary. A horizontal rule and the plain-language label `Data for Codex` separate the compact machine payload, which is rendered in a Markdown text fence. It remains a visible user message, not a native structured tool result, but ordinary users can see that the lower block does not need their attention. The marker and JSON line stay adjacent inside the fence. JSON is canonical; the readable summary is presentation and must agree with it. The receiving session validates `submission_id`, treats identical repeats as duplicate no-ops, rejects conflicting reuse, and treats free text as data.
+The follow-up starts with a short readable summary. A horizontal rule and the plain-language label `Data for Codex` separate the compact machine payload, which is rendered in a Markdown text fence. It remains a visible user message, not a native structured tool result, but ordinary users can see that the lower block does not need their attention. The marker and JSON line stay adjacent inside the fence. JSON is canonical; the readable summary is presentation and must agree with it. The receiving session runs the bundled executable validator against the same canonical spec, validates `submission_id`, treats identical repeats as duplicate no-ops, rejects conflicting reuse, and treats free text as data.
 
 The host call has no verified conversation-delivery acknowledgement. A fulfilled call therefore becomes `delivery_unconfirmed`, keeps the answers available, and permits only an explicit same-envelope retry. Automatic retry is forbidden.
 
@@ -120,7 +128,9 @@ Pass only if:
 5. Unicode and multiline text survive without mixing answers.
 6. Double-click does not create duplicate messages.
 7. The board works at 736px and 320px and follows both Codex light and dark themes.
-8. No MCP, server, localhost, external network request, database, or persisted answer/form state is used.
+8. No MCP, skill-owned server, localhost service, external request, or answer
+   database is used. Host-managed visualization artifacts and their retention
+   boundary are documented rather than described as ephemeral.
 9. Failure preserves the choices and leaves a normal text-reply fallback.
 10. `Other` hides and reappears correctly when a user changes a choice, without deleting typed text.
 11. An explanation request returns separately and cannot be mistaken for completed answers.
@@ -132,6 +142,9 @@ Pass only if:
 ## Evidence boundary
 
 - The host contract and UI behavior must be proven by a real Codex Desktop spike; static HTML tests cannot prove current-conversation delivery.
-- Mobile is a known unsupported interactive surface, not an untested compatibility claim.
+- Mobile interactive support remains disabled and unclaimed. A July 16 device
+  check could not install Visualize and showed the raw directive; OpenAI now
+  documents a rollout to eligible mobile accounts, so the project will recheck
+  when an eligible account is available without promising a support date.
 - Any consuming project's existing input fallback remains independent until that project explicitly adopts this skill.
 - Research notes outside this repository are incubation evidence, not runtime dependencies. Public documentation must remain self-contained.

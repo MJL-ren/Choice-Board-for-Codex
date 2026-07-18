@@ -225,6 +225,26 @@ class BranchRuleTests(unittest.TestCase):
                 answer_notes={"details": "숨은 메모"},
             )
 
+        missing_hidden = {
+            "depth": "quick",
+            "note": "",
+            "result": "one",
+        }
+        with self.assertRaisesRegex(BranchRuleError, "exact type-neutral"):
+            validate_returned_branch_state(
+                self.questions,
+                missing_hidden,
+                ["depth", "note", "result"],
+            )
+
+        wrong_neutral_type = dict(answers, details="")
+        with self.assertRaisesRegex(BranchRuleError, "exact type-neutral"):
+            validate_returned_branch_state(
+                self.questions,
+                wrong_neutral_type,
+                ["depth", "note", "result"],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

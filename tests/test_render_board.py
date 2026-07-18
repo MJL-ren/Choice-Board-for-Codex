@@ -728,6 +728,57 @@ class RenderBoardTests(unittest.TestCase):
             self.assertEqual(result.returncode, 2)
             self.assertIn("type must be single, multi, or text", result.stderr)
 
+    def test_cli_rejects_duplicate_keys_and_non_finite_numbers(self) -> None:
+        fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as directory:
+            spec = Path(directory) / "invalid.json"
+            output = Path(directory) / "board.html"
+
+            raw = json.dumps(fixture, ensure_ascii=False)
+            original = f'"form_id": "{fixture["form_id"]}"'
+            spec.write_text(
+                raw.replace(original, f'{original}, "form_id": "duplicate"', 1),
+                encoding="utf-8",
+            )
+            result = self.render(spec, output)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("duplicate JSON key: form_id", result.stderr)
+            self.assertFalse(output.exists())
+
+            fixture["not_a_number"] = float("nan")
+            spec.write_text(json.dumps(fixture), encoding="utf-8")
+            result = self.render(spec, output)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("non-finite JSON number is not allowed: NaN", result.stderr)
+            self.assertFalse(output.exists())
+
+    def test_rejects_unknown_top_question_and_option_fields(self) -> None:
+        base = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        cases = []
+
+        top_level = json.loads(json.dumps(base))
+        top_level["allow_explanaton"] = False
+        cases.append((top_level, "unknown top-level fields: allow_explanaton"))
+
+        question = json.loads(json.dumps(base))
+        question["questions"][0]["requred"] = False
+        cases.append((question, "unknown fields in questions[0]: requred"))
+
+        option = json.loads(json.dumps(base))
+        option["questions"][0]["options"][0]["lable"] = "Typo"
+        cases.append((option, "unknown fields in questions[0].options[0]: lable"))
+
+        with tempfile.TemporaryDirectory() as directory:
+            spec = Path(directory) / "invalid.json"
+            output = Path(directory) / "board.html"
+            for fixture, message in cases:
+                with self.subTest(message=message):
+                    spec.write_text(json.dumps(fixture), encoding="utf-8")
+                    result = self.render(spec, output)
+                    self.assertEqual(result.returncode, 2)
+                    self.assertIn(message, result.stderr)
+                    self.assertFalse(output.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -41,13 +41,19 @@ of scope.
 | --- | --- |
 | Codex Desktop on Windows | Live tested |
 | Codex Desktop on macOS | Intended, not independently verified yet |
-| Mobile | Interactive board unavailable; plain-text fallback only |
+| Mobile | Not currently supported interactively; plain-text fallback only |
 | Codex CLI and IDE extension | Not currently claimed |
 
 Plugin availability can vary by plan, workspace settings, role, surface, or
 region. When Visualize is unavailable—or when a phone shows the raw inline
 visualization directive—the skill immediately falls back to equivalent numbered
 text questions in the same conversation.
+
+OpenAI currently describes Visualizations as rolling out to eligible mobile
+accounts. That rollout does not establish Choice Board compatibility or a
+support date. This project will keep the text fallback until rendering,
+interaction, follow-up delivery, and retry are verified on an eligible mobile
+account. See the [official Visualizations documentation](https://learn.chatgpt.com/docs/visualizations).
 
 Built-in interface copy supports English and Korean. Question and option text
 stays in the language used by the caller, while unsupported interface locales
@@ -94,14 +100,17 @@ Ready-to-render examples are available in:
 ## How it works
 
 1. Codex converts the questions into the canonical Choice Board schema.
-2. A deterministic Python renderer validates the schema and injects it into a
-   fixed, root-scoped HTML fragment.
+2. A deterministic Python renderer strictly rejects duplicate JSON keys,
+   non-finite numbers, unknown fields, and invalid schema values before
+   injecting the canonical data into a fixed, root-scoped HTML fragment.
 3. Visualize displays native controls using the host theme.
 4. The board calls `window.openai.sendFollowUpMessage(...)` to request one
    follow-up in the current conversation.
-5. The receiving Codex task validates the marker, form identity, answer types,
-   option values, flow digest, active path, and duplicate-submission identity
-   before using the response.
+5. The receiving Codex task runs the bundled envelope validator against the
+   same canonical specification before using the response. The validator checks
+   the marker, readable-summary parity, form identity, exact question keys,
+   answer types, option values, flow digest, active path, completion parent, and
+   duplicate-submission identity.
 
 A fulfilled host call is not treated as proof that the message reached the
 conversation. The board keeps the draft available and offers an explicit,
@@ -112,8 +121,16 @@ used.
 
 - Submitted answers appear in the current Codex conversation.
 - The skill does not send answers to a separate server or database.
-- Temporary JSON and HTML may be created in the task's local visualization
-  directory; generated boards and user responses do not belong in this repo.
+- Canonical JSON and rendered HTML are created in the task's local visualization
+  directory. Codex Desktop controls that directory's retention; files may
+  remain after submission or app restart, and restored boards may contain
+  `initial_*` answer state. Choice Board has no host cleanup API and does not
+  promise automatic deletion.
+- Returned messages may be copied briefly into the same task directory for
+  deterministic envelope validation. Those extra copies should be removed when
+  the original task, retry, explanation, and completion flow no longer need
+  them. Generated boards, validation copies, and user responses do not belong
+  in this repository.
 - Only the user-controlled activation preference is stored locally by the
   skill.
 - Do not use the board to collect secrets, credentials, sensitive personal
@@ -125,8 +142,8 @@ See [`SECURITY.md`](SECURITY.md) for reporting and trust-boundary details.
 
 ## Validation status
 
-The current public candidate has deterministic schema, escaping, compiler,
-branch-state, retry, and receiver-parity tests. Browser checks cover compact,
+The current public preview has deterministic schema, escaping, compiler,
+branch-state, retry, and full-envelope validation tests. Browser checks cover compact,
 guided, answer-note, branching, locale fallback, 30-question guided flow, 320px
 and 736px layouts, and host light/dark themes. Real Windows Codex Desktop runs
 have also exercised submission, cancellation recovery, Back preservation,
@@ -154,11 +171,12 @@ python -m unittest discover -s tests -p "test_*.py" -v
 Validate the skill package:
 
 ```powershell
-python -X utf8 path/to/skill-creator/scripts/quick_validate.py skills/codex-choice-board
+python -m pip install PyYAML==6.0.2
+python tests/run_official_skill_validator.py
 ```
 
-Replace `path/to/skill-creator` with the validator location in your Codex
-installation.
+The runner downloads the OpenAI `skill-creator` quick validator from a pinned
+official commit and verifies its SHA-256 hash before execution.
 Browser commands and generated-fixture steps are documented in
 [`docs/TESTING.md`](docs/TESTING.md).
 

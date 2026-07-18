@@ -112,6 +112,9 @@ def validate_returned_branch_state(
 ) -> list[str]:
     """Recompute and validate the active path and every hidden-state invariant."""
 
+    if not isinstance(answers, dict):
+        raise BranchRuleError("answers must be an object")
+
     expected = active_question_ids(questions, answers)
     if not isinstance(claimed_active_question_ids, list) or any(
         not isinstance(question_id, str) for question_id in claimed_active_question_ids
@@ -122,10 +125,13 @@ def validate_returned_branch_state(
 
     question_by_id = {question["id"]: question for question in questions}
     hidden = set(question_by_id) - set(expected)
+    missing_hidden_answers = hidden - set(answers)
     invalid_hidden_answers = {
         question_id
         for question_id in hidden
-        if bool(answers.get(question_id, ""))
+        if question_id in answers
+        and answers[question_id]
+        != ([] if question_by_id[question_id]["type"] == "multi" else "")
     }
     other_answers = other_answers or {}
     answer_notes = answer_notes or {}
@@ -141,9 +147,11 @@ def validate_returned_branch_state(
             if isinstance(item, dict)
         }
     ) & hidden
-    invalid_hidden = invalid_hidden_answers | invalid_hidden_state
+    invalid_hidden = missing_hidden_answers | invalid_hidden_answers | invalid_hidden_state
     if invalid_hidden:
-        raise BranchRuleError("hidden branch questions must keep neutral returned state")
+        raise BranchRuleError(
+            "hidden branch questions must keep exact type-neutral returned state"
+        )
     if active_question_id is not None and active_question_id not in expected:
         raise BranchRuleError("active_question_id must belong to active_question_ids")
     return expected

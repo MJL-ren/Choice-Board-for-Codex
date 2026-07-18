@@ -58,8 +58,8 @@ The initial owner choices are resolved. Keep this file as the reasoned decision 
 
 ## D09 — Mobile availability
 
-- Status: `resolved — interactive board unavailable, text fallback`
-- Decision: Mobile can mirror a desktop task but cannot install Visualize or render the inline Choice Board. When the user reports mobile use or a raw visualization directive, do not render another board. Continue with equivalent numbered text questions in the same conversation. Do not claim automatic device detection.
+- Status: `resolved — text fallback until an eligible mobile account passes live validation`
+- Decision: The July 16 mobile check could not install Visualize and displayed the raw inline directive. OpenAI now documents Visualizations as rolling out to eligible mobile accounts, but that does not prove Choice Board rendering or follow-up delivery and does not provide this project with a support date. When the user reports mobile use or a raw directive, continue with equivalent numbered text questions. Reconsider interactive support only after an eligible mobile account passes rendering, input, callback, retry, and fallback checks. Do not claim automatic device detection or a future availability date.
 
 ## D11 — Internal authoring format
 
@@ -84,7 +84,7 @@ The initial owner choices are resolved. Keep this file as the reasoned decision 
 
 ## Proposed technical defaults that do not need an owner decision now
 
-- Support Codex Desktop with Visualize first. Treat mobile interactive rendering as known unavailable and mark other Codex surfaces unsupported until tested.
+- Support Codex Desktop with Visualize first. Keep mobile on the text fallback until an eligible account passes live validation, and mark other Codex surfaces unsupported until tested.
 - Keep one canonical JSON schema and let both natural-language callers and other skills normalize into it.
 - Use one fixed HTML fragment asset plus a small deterministic renderer for schema validation and safe data injection.
 - Allow one active board and at most one in-flight host request in V0.

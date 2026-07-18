@@ -36,6 +36,37 @@ QUESTION_TYPES = {"single", "multi", "text"}
 MAX_OPTIONS = 20
 MAX_FRAGMENT_BYTES = 2_000_000
 OTHER_VALUE = "__other__"
+TOP_LEVEL_FIELDS = {
+    "schema_version",
+    "presentation",
+    "form_id",
+    "locale",
+    "allow_explanation",
+    "allow_deferred_explanation",
+    "submit_label",
+    "questions",
+    "ui_copy",
+    "initial_answers",
+    "initial_other_answers",
+    "initial_answer_notes",
+    "initial_question_id",
+    "initial_skipped_question_ids",
+    "initial_deferred_explanation_requests",
+    "flow_digest",
+    "completion_parent",
+}
+COMMON_QUESTION_FIELDS = {
+    "id",
+    "type",
+    "label",
+    "description",
+    "required",
+    "allow_answer_note",
+}
+CHOICE_QUESTION_FIELDS = {"options", "allow_other"}
+TEXT_QUESTION_FIELDS = {"placeholder"}
+GUIDED_QUESTION_FIELDS = {"allow_skip", "show_if"}
+OPTION_FIELDS = {"value", "label"}
 UI_COPY_KEYS = {
     "other",
     "otherPrompt",
@@ -92,6 +123,29 @@ GUIDED_QUESTION_BRANCH_FIELDS = {"branches", "next", "next_if"}
 
 class SpecError(ValueError):
     pass
+
+
+def _strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    for key, item in pairs:
+        if key in value:
+            raise SpecError(f"duplicate JSON key: {key}")
+        value[key] = item
+    return value
+
+
+def _reject_json_constant(value: str) -> None:
+    raise SpecError(f"non-finite JSON number is not allowed: {value}")
+
+
+def load_json_strict(text: str) -> Any:
+    """Parse JSON while rejecting duplicate keys and non-finite numbers."""
+
+    return json.loads(
+        text,
+        object_pairs_hook=_strict_object,
+        parse_constant=_reject_json_constant,
+    )
 
 
 def require_text(value: Any, field: str, *, maximum: int = 500) -> str:
@@ -174,6 +228,12 @@ def normalize_spec(raw: Any) -> dict[str, Any]:
                 "use question-level show_if: " + ", ".join(forbidden)
             )
         presentation = "stepper"
+
+    unknown_top_level_fields = sorted(set(raw) - TOP_LEVEL_FIELDS)
+    if unknown_top_level_fields:
+        raise SpecError(
+            "unknown top-level fields: " + ", ".join(unknown_top_level_fields)
+        )
 
     form_id = require_id(raw.get("form_id"), "form_id")
     completion_parent_raw = raw.get("completion_parent")
@@ -269,6 +329,18 @@ def normalize_spec(raw: Any) -> dict[str, Any]:
         if not isinstance(question_type, str) or question_type not in QUESTION_TYPES:
             raise SpecError(f"{prefix}.type must be single, multi, or text")
 
+        allowed_question_fields = set(COMMON_QUESTION_FIELDS)
+        allowed_question_fields.update(
+            TEXT_QUESTION_FIELDS if question_type == "text" else CHOICE_QUESTION_FIELDS
+        )
+        if schema_version == 2:
+            allowed_question_fields.update(GUIDED_QUESTION_FIELDS)
+        unknown_question_fields = sorted(set(item) - allowed_question_fields)
+        if unknown_question_fields:
+            raise SpecError(
+                f"unknown fields in {prefix}: " + ", ".join(unknown_question_fields)
+            )
+
         question: dict[str, Any] = {
             "id": question_id,
             "type": question_type,
@@ -301,6 +373,12 @@ def normalize_spec(raw: Any) -> dict[str, Any]:
                 option_prefix = f"{prefix}.options[{option_index}]"
                 if not isinstance(option_raw, dict):
                     raise SpecError(f"{option_prefix} must be an object")
+                unknown_option_fields = sorted(set(option_raw) - OPTION_FIELDS)
+                if unknown_option_fields:
+                    raise SpecError(
+                        f"unknown fields in {option_prefix}: "
+                        + ", ".join(unknown_option_fields)
+                    )
                 value = require_id(option_raw.get("value"), f"{option_prefix}.value")
                 if value == OTHER_VALUE:
                     raise SpecError(f"{OTHER_VALUE} is reserved for the Other option")
@@ -684,7 +762,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     try:
-        raw = json.loads(args.spec.read_text(encoding="utf-8"))
+        raw = load_json_strict(args.spec.read_text(encoding="utf-8"))
         normalized = normalize_spec(raw)
         template = args.template.read_text(encoding="utf-8")
         fragment = render_fragment(normalized, template)
