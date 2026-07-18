@@ -36,7 +36,7 @@ Use one question per step for longer, conditional, or explanation-heavy work. Tr
 - End with a complete answer review before the single final submission.
 - Preserve one in-flight host request and the current unconfirmed/manual-retry contract.
 
-For a fixed path, `2 / 5` is understandable. When conditions can change the path length, use stable phase wording such as `기본 확인 → 세부 확인 → 검토` rather than a denominator that moves backward.
+For a fixed path, `2 / 5` is understandable. When conditions can change the path length, use stable phase wording such as `Baseline → Details → Review` rather than a denominator that moves backward.
 
 ## Implementation sequence
 
@@ -61,9 +61,9 @@ Local evidence:
 
 ### Phase A.1 — Deferred explanation without repeating completed questions — implemented locally
 
-- `지금 설명 듣기` keeps the existing pause-and-restore path.
-- `설명 필요로 표시하고 계속` stores a question-specific request and optional provisional value without treating it as final.
-- Review distinguishes answered, skipped, and `설명 후 결정` states. A deferred review sends an explanation request rather than a completed submission.
+- The immediate-explanation action keeps the existing pause-and-restore path.
+- The defer-and-continue action stores a question-specific request and optional provisional value without treating it as final.
+- Review distinguishes answered, skipped, and decide-after-explanation states. A deferred review sends an explanation request rather than a completed submission.
 - After explaining, render only the deferred questions: compact for one to three, otherwise guided with further deferral disabled.
 - The small board carries the parent form ID, explanation-request submission ID, and original flow digest. Merge only after all parent fields and deferred question IDs match.
 - Local schema and Chrome checks pass. The remaining evidence is one live after-completion callback followed by its small completion-board submission.
@@ -119,7 +119,7 @@ Do not emit another inline board in that state.
 - Whether the final review later needs direct Edit actions for every answer. Phase A intentionally uses Back-only sequential correction.
 - Whether phase progress or numeric progress feels clearer before conditional branches are enabled.
 - Whether a separate clear action is ever useful in addition to Skip. Phase A uses Skip as an explicit answer state on every question by default; returning with Back and choosing an answer replaces that state.
-- Whether people prefer `설명 필요로 표시하고 계속` or a shorter label after the first deferred live run.
+- Whether people prefer the full defer-and-continue label or a shorter label after the first deferred live run.
 
 ## First prototype acceptance
 

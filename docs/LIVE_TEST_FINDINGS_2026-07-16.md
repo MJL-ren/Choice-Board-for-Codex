@@ -19,7 +19,7 @@ The food-preference exercise completed three consecutive boards with five questi
 
 Keep both layers, but assign one authority to each.
 
-- The `선택 보드 답변` section is a human-readable presentation summary.
+- The answer-summary section is a human-readable presentation layer.
 - The final complete `CHOICE_BOARD_SUBMISSION` or `CHOICE_BOARD_EXPLANATION_REQUEST` line and immediately following JSON line are the canonical machine payload.
 - If the summary and canonical payload disagree, fail closed and report the mismatch. Do not silently choose one answer set.
 - Keep `kind` inside the JSON even though the marker identifies the message type; the two values provide a cheap consistency check.
@@ -30,9 +30,9 @@ Keep both layers, but assign one authority to each.
 
 The first explanation-request edge test produced a real delivery ambiguity:
 
-- The user rapidly activated `설명 요청하기` twice.
+- The user rapidly activated the explanation-request action twice.
 - A confirmation dialog that had appeared on earlier single-click submissions did not remain visible.
-- The board changed to `보냈어요` and permanently disabled its controls.
+- The board changed to a localized sent-confirmation state and permanently disabled its controls.
 - The current Codex thread contained no `CHOICE_BOARD_EXPLANATION_REQUEST` callback afterward; only the user's manual incident report appeared.
 
 The retry reproduced the same state with a clearer cause:
@@ -40,14 +40,14 @@ The retry reproduced the same state with a clearer cause:
 - A single explanation activation opened the host confirmation dialog.
 - The user explicitly chose `Cancel`.
 - `sendFollowUpMessage(...)` still fulfilled rather than throwing in the fragment's observed control flow.
-- The board immediately changed to `보냈어요`, disabled every answer, and offered no retry.
+- The board immediately changed to a sent-confirmation state, disabled every answer, and offered no retry.
 - No canonical explanation callback appeared in the conversation.
 
 Treat this as `delivery unconfirmed / retry unavailable`, not a successful duplicate-suppression result. The fulfilled `sendFollowUpMessage` awaitable proves only that the host call returned; it did not prove that a canonical message became a conversation turn in this observation.
 
 Before public release, consider:
 
-- wording the immediate board state as `전송 요청됨` rather than confirmed delivery;
+- wording the immediate board state as delivery requested rather than confirmed delivery;
 - preserving the disabled answers visibly instead of implying that the conversation received them;
 - assigning a stable `submission_id` before the first send;
 - allowing an explicit retry with the same `submission_id` after an unconfirmed result;
@@ -64,7 +64,7 @@ The retry confirmed that the host confirmation view did not visibly show the alr
 
 The renderer did collect the choices in `draft_answers` and `draft_other_answers`, and the canonical JSON was included in the raw prompt. The usability defect is in the human-readable explanation summary: it currently contains only the explanation request text, while normal submissions use `readableSummary(...)`.
 
-Before the next live explanation test, include a concise `현재 선택 초안` block built from the same collected values and labels. The confirmation surface must let a non-developer verify both the explanation question and the choices that will accompany it without reading JSON.
+Before the next live explanation test, include a concise current-draft block built from the same collected values and labels. The confirmation surface must let a non-developer verify both the explanation question and the choices that will accompany it without reading JSON.
 
 ### P0 — Clarify canonical authority
 
@@ -92,7 +92,7 @@ The explanation callback returns `draft_answers` and `draft_other_answers`, but 
 
 The first edge run also exposed the native radio-control behavior: after selecting one single-choice option, the user could switch to another option but could not return the question to an unanswered state. For a required question this is consistent with the answer contract, but it makes test recovery less obvious; for an optional single-choice question it would prevent the user from withdrawing an accidental answer.
 
-Keep required-answer semantics unchanged. Before public release, decide whether optional single-choice questions need a small `선택 지우기` action or an explicit `응답하지 않음` option. Do not add a board-wide reset merely to support this test case.
+Keep required-answer semantics unchanged. Before public release, decide whether optional single-choice questions need a small clear-selection action or an explicit no-response option. Do not add a board-wide reset merely to support this test case.
 
 ### P2 — Make render verification one operation
 
@@ -122,10 +122,10 @@ The rapid duplicate test unexpectedly exposed a host-return-without-observed-cal
 
 The repository implementation was tightened after the two failed edge runs:
 
-- fulfilled host calls now end in an explicit `delivery_unconfirmed` state instead of `보냈어요`;
+- fulfilled host calls now end in an explicit `delivery_unconfirmed` state instead of a sent-confirmation state;
 - thrown errors and `{ isError: true }` remain retryable without losing answers;
 - unchanged manual retries reuse the exact prompt and stable `submission_id`, while edits create a new envelope;
-- explanation confirmations now include a readable `현재 선택 초안` section;
+- explanation confirmations now include a readable current-draft section;
 - schema-v1 `initial_answers` and `initial_other_answers` restore a validated incomplete draft;
 - the receiving skill contract now treats canonical JSON as authority and handles duplicate/conflicting submission IDs fail-closed;
 - required error and delivery status text no longer use the smallest text style.
@@ -140,7 +140,7 @@ Sequential flow identity, bounded multi-select counts, optional single-choice cl
 
 - Intended form: `produce-preference-edge-r1`
 - Observed event: rapid double activation of the explanation action
-- Board state afterward: `보냈어요`, controls disabled
+- Board state afterward: sent-confirmation state, controls disabled
 - Host confirmation UI: not visibly available after the rapid activation
 - Canonical callback in current thread: absent, verified through the thread history
 - Verdict: `FAIL — delivery unconfirmed and no retry path`
@@ -158,7 +158,7 @@ Sequential flow identity, bounded multi-select counts, optional single-choice cl
 - Explanation activation: one click opened the host confirmation dialog.
 - Confirmation preview: selected choice labels were not visibly represented; free-text content was visible.
 - User action in confirmation dialog: `Cancel`.
-- Board state afterward: `보냈어요`, all controls disabled, no retry.
+- Board state afterward: sent-confirmation state, all controls disabled, no retry.
 - Canonical callback in current thread: absent.
 - Verdict: `FAIL — cancellation treated as delivery, draft-choice preview inadequate, retry unavailable`.
 - Canonical `Other` and explanation-draft payload delivery remain unverified because cancellation produced no conversation message.
@@ -166,9 +166,9 @@ Sequential flow identity, bounded multi-select counts, optional single-choice cl
 ## Patched live recheck
 
 - Fixture: `fruit-vegetable-retry-test-v2`, five non-sensitive fruit and vegetable preference questions.
-- The first host confirmation was cancelled. No callback appeared, and the board kept the visible draft while showing `같은 내용 다시 보내기` and an explicit delivery-unconfirmed explanation.
+- The first host confirmation was cancelled. No callback appeared, and the board kept the visible draft while showing a retry-the-same-content action and an explicit delivery-unconfirmed explanation.
 - The manual retry produced one canonical explanation request in the same conversation.
-- Its readable `현재 선택 초안` contained the same radio and checkbox labels as the canonical draft payload.
+- Its readable current-draft summary contained the same radio and checkbox labels as the canonical draft payload.
 - The replacement board restored all selected values and returned to an editable state.
 - The final canonical submission matched the restored draft and used a distinct final-submission ID.
 - Verdict: `PASS — patched cancellation, retry, explanation preview, draft restoration, and final submission path`.
@@ -208,7 +208,7 @@ The conversation cannot expose the cancelled attempt's hidden envelope, so the l
 ### Follow-up message readability polish — 2026-07-17
 
 - Kept the readable summary and canonical JSON transport unchanged in authority.
-- Added a horizontal rule, a plain-language `Codex가 읽는 자동 데이터` / `Data for Codex` explanation, and a Markdown text fence around the adjacent marker-plus-JSON pair.
+- Added a horizontal rule, a plain-language `Data for Codex` explanation, and a Markdown text fence around the adjacent marker-plus-JSON pair.
 - This is presentation-only: the receiver still finds the exact marker line and parses the immediately following single JSON line.
 
 ### All-question explicit Skip contract — 2026-07-17
@@ -230,15 +230,15 @@ The conversation cannot expose the cancelled attempt's hidden envelope, so the l
 
 ### Deferred explanation — local implementation — 2026-07-17
 
-- Guided explanation now offers `지금 설명 듣기` and `설명 필요로 표시하고 계속` as distinct actions.
-- Deferred questions retain an optional provisional answer, remain separate from Skip, restore their question-specific request after Back, and appear as `설명 후 결정` in review.
+- Guided explanation now offers immediate and defer-and-continue actions as distinct choices.
+- Deferred questions retain an optional provisional answer, remain separate from Skip, restore their question-specific request after Back, and appear as decide-after-explanation in review.
 - A review containing deferred questions sends `after_completion`, not a completed Choice Board submission. The follow-up completion board contains only the deferred questions and carries a validated parent form ID, submission ID, and flow digest.
 - Python tests: 19 passed. Compact and guided Chrome smoke tests passed, including immediate-mode regression, unanswered required deferral, provisional-answer editing, parent-linked completion payload, duplicate suppression, retry identity, responsive layout, and theme checks.
 - Status: `LOCAL PASS — followed by the complete live run below`.
 
 ### Deferred explanation through completion — Codex Desktop live run — 2026-07-17
 
-- The six-question guided form `deferred-explanation-live-test-20260717-001` left required question `priority_rule` unanswered and marked it `설명 후 결정` while preserving five completed answers.
+- The six-question guided form `deferred-explanation-live-test-20260717-001` left required question `priority_rule` unanswered and marked it decide-after-explanation while preserving five completed answers.
 - Review returned one canonical `after_completion` request. The deferred list contained only `priority_rule`; skipped and deferred state remained disjoint, and the flow digest matched the rendered form.
 - The receiver used the completed answers as context, explained only the four pending option meanings, and rendered one compact completion question rather than recreating the six-question form.
 - The completion submission selected `recovery_value` and repeated the exact parent form ID, explanation-request submission ID, and parent flow digest. The receiver accepted only that deferred question and merged it into the preserved draft.

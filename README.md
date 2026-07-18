@@ -49,6 +49,10 @@ region. When Visualize is unavailable—or when a phone shows the raw inline
 visualization directive—the skill immediately falls back to equivalent numbered
 text questions in the same conversation.
 
+Built-in interface copy supports English and Korean. Question and option text
+stays in the language used by the caller, while unsupported interface locales
+fall back to English.
+
 ## Installation
 
 1. In the ChatGPT desktop app, open **Plugins**, find **Visualize** by OpenAI,

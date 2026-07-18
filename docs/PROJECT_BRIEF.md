@@ -18,7 +18,7 @@ Show a small native-control choice board inside the current Codex Desktop conver
 
 ### Activation
 
-- Default: `explicit` — a direct skill call or a natural-language request to create choices or a choice board. The outer discovery gate remains enabled so requests such as `선택지 만들어줘` can load the skill; this does not permit ambient automatic use.
+- Default: `explicit` — a direct skill call or a natural-language request to create choices or a choice board. The outer discovery gate remains enabled so requests such as `give me choices` can load the skill; this does not permit ambient automatic use.
 - Optional: `suggest` — ask first when the request is a good board candidate.
 - Optional: `auto` — open directly when the same candidate rules match.
 - Missing or invalid user settings fail closed to `explicit`.

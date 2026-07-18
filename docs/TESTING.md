@@ -89,8 +89,8 @@ To use an existing local Chrome instead of downloading Playwright Chromium, set
 - Three consecutive ordinary submissions returned to the same conversation with distinct form IDs.
 - Korean text, punctuation, single choice, multi choice, optional input, and Unicode survived the returned message.
 - Required-answer blocking displayed a question-specific message.
-- A cancelled explanation confirmation produced no callback; the old board falsely showed `보냈어요` and locked. This failure is preserved in the findings note and is the reason for the new unconfirmed/retry contract.
-- The patched cancellation state preserved the visible draft, reported delivery as unconfirmed, and exposed `같은 내용 다시 보내기` instead of locking the board.
+- A cancelled explanation confirmation produced no callback; the old board falsely showed a sent-confirmation state and locked. This failure is preserved in the findings note and is the reason for the new unconfirmed/retry contract.
+- The patched cancellation state preserved the visible draft, reported delivery as unconfirmed, and exposed a retry-the-same-content action instead of locking the board.
 - The explicit retry produced an explanation callback whose readable summary contained every selected label.
 - The replacement board restored all draft choices, and its final canonical submission matched the explanation draft.
 - A mirrored mobile view displayed the raw visualization directive rather than the board. Mobile interactive rendering is therefore recorded as unavailable; text is the fallback.

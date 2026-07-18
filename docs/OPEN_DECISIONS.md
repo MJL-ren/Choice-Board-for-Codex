@@ -7,7 +7,7 @@ The initial owner choices are resolved. Keep this file as the reasoned decision 
 - Status: `resolved — explicit by default, configurable afterward`
 - Option A — explicit only: run when the user names the skill, directly asks in natural language for choices or a choice board, or when another workflow deliberately delegates a form specification.
 - Option B — adaptive automatic: allow Codex to invoke it whenever several answers might be easier to collect visually.
-- Decision: Keep **Option A** as the fail-closed runtime default, while offering `suggest` and `auto` as user-controlled modes. Natural-language direct requests such as `선택지 만들어줘` count as explicit invocation, so the outer discovery policy remains enabled in every mode; that policy alone never authorizes ambient suggestion or automatic opening.
+- Decision: Keep **Option A** as the fail-closed runtime default, while offering `suggest` and `auto` as user-controlled modes. Natural-language direct requests such as `give me choices` count as explicit invocation, so the outer discovery policy remains enabled in every mode; that policy alone never authorizes ambient suggestion or automatic opening.
 
 ## D02 — Visible follow-up format
 
