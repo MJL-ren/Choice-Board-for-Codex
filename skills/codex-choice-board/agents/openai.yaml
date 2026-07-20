@@ -1,7 +1,7 @@
 interface:
   display_name: "Choice Board for Codex"
-  short_description: "Ask with lightweight choices in Codex Desktop"
-  default_prompt: "Create a lightweight choice board so I can answer several choices clearly."
+  short_description: "Answer related questions in one lightweight board"
+  default_prompt: "Use $codex-choice-board to ask me several related questions in one lightweight board."
 
 policy:
   allow_implicit_invocation: true

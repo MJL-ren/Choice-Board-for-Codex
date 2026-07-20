@@ -1,13 +1,8 @@
 # Internal Board Draft
 
-Use this format only to author a **new fixed guided board** more concisely. It
-is not a public schema, renderer input, callback format, or saved user state.
-The deterministic compiler must turn it into the normalized schema-version-2
-spec before the existing renderer sees it.
+Use Draft only for a fresh fixed guided board with at least four questions, bundled `en` or `ko` copy, and no branching, custom `ui_copy`, restored state, completion state, supplied `flow_digest`, or other unsupported field. The deterministic compiler must create canonical schema-version-2 JSON before rendering.
 
-Do not use Draft for compact boards, explanation resume, completion boards,
-custom `ui_copy`, branching, supplied `flow_digest`, or any `initial_*` state.
-Write those directly in the canonical format from [schema.md](schema.md).
+Draft is not a public schema, renderer input, callback format, or saved state. Use [schema.md](schema.md) directly for every ineligible case.
 
 ```json
 {
@@ -20,50 +15,34 @@ Write those directly in the canonical format from [schema.md](schema.md).
       "id": "route",
       "type": "single",
       "label": "Which route should we take?",
-      "required": true,
       "allow_answer_note": true,
-      "options": [
-        ["apply", "Apply it here"],
-        ["handoff", "Hand it off"]
-      ]
+      "options": [["apply", "Apply it here"], ["handoff", "Hand it off"]]
     },
     {
-      "id": "note",
-      "type": "text",
-      "label": "Anything else?"
-    }
+      "id": "checks",
+      "type": "multi",
+      "label": "What should we check?",
+      "options": [["scope", "Scope"], ["evidence", "Evidence"]]
+    },
+    {
+      "id": "timing",
+      "type": "single",
+      "label": "When should it happen?",
+      "options": [["now", "Now"], ["later", "Later"]]
+    },
+    {"id": "note", "type": "text", "label": "Anything else?"}
   ]
 }
 ```
 
-## Concise rules
+Top level requires `draft_version`, `mode`, `form_id`, `locale`, and `questions`; it may add `allow_explanation`, `allow_deferred_explanation`, and `submit_label`. Every question requires `id`, `type`, and `label`. Add only type-valid `description`, `required`, `allow_skip`, `placeholder`, `allow_other`, `allow_answer_note`, or `options`.
 
-- Top level: `draft_version`, `mode`, `form_id`, `locale`, `questions`, plus
-  optional `allow_explanation`, `allow_deferred_explanation`, and
-  `submit_label`.
-- Every question: `id`, `type`, `label`.
-- Add `description`, `required`, `allow_skip`, `placeholder`, `allow_other`,
-  `allow_answer_note`, or `options` only when needed by that question type.
-- Omit defaults: `required: false`, `allow_skip: true`, `allow_other: true`,
-  board explanation enabled, and deferred explanation enabled.
-- Choice options are ordered `[value, label]` pairs. Text questions have no
-  options, `allow_other`, or `allow_answer_note`.
-- `allow_answer_note` is choice-only and defaults to `false` for compatibility.
-  When the current board should let a user keep a comment with a selected
-  answer, set it to `true` explicitly. The compiler never adds it silently.
-- Keep at least four questions. There is no fixed question-count ceiling and the compiler never splits a large form; the rendered fragment must still remain below the normal 2 MB safety boundary.
+Omit defaults: `required: false`, `allow_skip: true`, `allow_other: true`, explanation enabled, and deferred explanation enabled. Choice options are ordered `[value, label]` pairs. Text questions have no options, Other, or answer note. Answer notes are choice-only and default to `false`; enable them explicitly when useful.
 
-The compiler rejects duplicate keys, non-finite numbers, unknown fields,
-malformed pairs, reserved or duplicate values, invalid IDs and types, and any
-state or branch field outside this narrow contract.
-
-Compile to a unique thread-temporary path:
+Compile once to a unique path:
 
 ```text
 python scripts/compile_board_draft.py --draft <draft.json> --spec-output <canonical.json>
 ```
 
-Render only after that exact command succeeds, using `<canonical.json>` with
-`render_board.py`. Keep the canonical file as the authority for validating the
-returned envelope. Never reuse an older canonical output after a failed
-compile.
+Render only the successful canonical output. Never reuse an older output after a failed compile.
