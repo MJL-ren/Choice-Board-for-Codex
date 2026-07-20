@@ -1,5 +1,7 @@
 # Choice Board for Codex
 
+**English** | [한국어](README.ko.md)
+
 > **Answer more. Type less.**
 >
 > Unofficial community project. Not affiliated with or endorsed by OpenAI.
