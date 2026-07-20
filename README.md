@@ -1,22 +1,74 @@
 # Choice Board for Codex
 
+> **Answer more. Type less.**
+>
 > Unofficial community project. Not affiliated with or endorsed by OpenAI.
 
-Choice Board turns several related questions into one lightweight interactive
-board inside Codex Desktop. It supports single choice, multiple choice, free
-text, answer notes, explanations, review, and bounded one-layer branching. The
-result returns to the same conversation as a readable summary plus a validated
-machine payload.
+Choice Board turns a batch of related Codex questions into one small interactive
+board. Pick from single-choice or multiple-choice options, add free text or a
+short note, ask for an explanation when something is unclear, and send the
+finished answers back to the same conversation.
 
 No MCP server, localhost service, tunnel, database, or separate web app is
 required.
 
-## Why it exists
+## Why I built it
 
-Long numbered questionnaires are easy to skip or answer ambiguously. Choice
-Board gives each answer a clear shape while keeping the conversation as the
-source of context. People see normal labels and controls; Codex receives a
-canonical payload that it can validate before acting on the result.
+I was used to choice pickers in other tools, and I missed that rhythm in normal
+Codex work. The closest built-in flow I had used was tied to Plan mode. When a
+regular task asked five or six related questions, I still had to type each
+answer out, keep the numbering straight, and make sure I had not skipped
+anything. It kept breaking the flow, so I built the interaction I wanted to use.
+
+For a few questions, the board keeps everything together so the options are
+easy to compare. Longer sets become a guided flow with Back, Skip, notes, and a
+final review. I also added something I had not found in the other choice
+interfaces I used: bounded branching. One earlier answer can hide prewritten
+follow-ups that no longer apply, so Codex can gather more complicated context
+with fewer unnecessary questions and fewer turns.
+
+The board follows Codex's own theme and native controls. It deliberately avoids
+decorative CSS effects and heavy animation that could make a simple form feel
+sluggish, especially on modest hardware. And when an AI-generated option leans
+on jargon or hidden context, you can mark that question for explanation instead
+of guessing what it means.
+
+This is a small unofficial tool, but I would be happy to see this kind of
+multi-question interaction become a built-in part of Codex someday.
+
+## See it in action
+
+### Short boards keep the choices together
+
+When the question set is small, the options stay on one board. You can pick an
+answer, add a note, ask for an explanation, and send everything without typing
+out a numbered reply.
+
+![A compact Choice Board with a selected answer and an open answer-note field](assets/screenshots/choice-board-answer-note-dark.png)
+
+### Longer boards follow the route you choose
+
+A branching board starts with one routing choice. Only prewritten follow-up
+questions that still apply to that answer are shown.
+
+![The first step of a branching Choice Board with Mix both selected](assets/screenshots/branching-route-mixed-dark.png)
+
+The next step changes with the route while keeping familiar Back, Skip, and
+Next controls.
+
+![A later branching step with outdoor activities and guided navigation](assets/screenshots/branching-outdoor-multi-select-dark.png)
+
+### Ask for context, then review once
+
+If a question is unclear, you can ask for an explanation immediately or mark
+it for later and finish the rest first.
+
+![A guided Choice Board offering immediate or deferred explanation](assets/screenshots/branching-explanation-request-dark.png)
+
+Before anything is sent, the board gathers the active answers and unresolved
+explanation requests into one review.
+
+![The final Choice Board review with an explanation request ready to send](assets/screenshots/branching-review-dark.png)
 
 ## Interaction modes
 
@@ -69,8 +121,9 @@ fall back to English.
    $skill-installer Install the skill from https://github.com/MJL-ren/Choice-Board-for-Codex/tree/main/skills/codex-choice-board
    ```
 
-3. Start a new Codex task. If the skill or Visualize does not appear, restart
-   the desktop app and confirm both are enabled.
+3. Open the slash menu and try `/codex-choice-board`. If it does not appear
+   immediately, start a new Codex task or restart the desktop app, then confirm
+   that both the skill and Visualize are enabled.
 
 OpenAI documents direct skill installation as a local authoring and
 experimentation path. A packaged Codex plugin is the preferred route for wider
@@ -140,14 +193,15 @@ used.
 
 See [`SECURITY.md`](SECURITY.md) for reporting and trust-boundary details.
 
-## Validation status
+## Tested in real use
 
-The current public preview has deterministic schema, escaping, compiler,
-branch-state, retry, and full-envelope validation tests. Browser checks cover compact,
-guided, answer-note, branching, locale fallback, 30-question guided flow, 320px
-and 736px layouts, and host light/dark themes. Real Windows Codex Desktop runs
-have also exercised submission, cancellation recovery, Back preservation,
-immediate and deferred explanation, answer notes, and one bounded branch.
+Choice Board is tested beyond a static mockup. The automated suite covers schema
+validation, escaping, compilation, branch state, retry behavior, and the full
+returned message. Browser checks cover compact, guided, answer-note, branching,
+locale fallback, a 30-question guided flow, 320px and 736px layouts, and Codex
+light and dark themes. Real Windows Codex Desktop runs have also exercised
+submission, cancellation recovery, Back preservation, immediate and deferred
+explanation, answer notes, and one bounded branch.
 
 These checks do not claim screen-reader certification, automatic mobile-device
 detection, or support on untested Codex surfaces. The exact boundary is recorded
@@ -186,18 +240,14 @@ Run every browser regression after installing Playwright:
 npm run test:browser
 ```
 
-## Built with Codex
+## Built through real use
 
-Development began on July 16, 2026, during the OpenAI Build Week submission
-period. Codex and GPT-5.6 were used to turn repeated live UX failures into the
-delivery-recovery contract, design the canonical schema and bounded branching
-rules, implement the renderer and compiler, generate adversarial fixtures, and
-run independent authoring comparisons. Product boundaries—especially the
-desktop-only interactive surface, fail-closed activation, no-server design,
-answer-note behavior, and one-layer branch limit—were explicit owner decisions.
-
-The dated development and possible hackathon evidence boundary is recorded in
-[`docs/DEVELOPMENT_PROVENANCE.md`](docs/DEVELOPMENT_PROVENANCE.md).
+Codex and GPT-5.6 helped turn repeated live UX failures into the
+delivery-recovery contract, canonical schema, renderer, compiler, adversarial
+fixtures, and browser tests. The product boundaries were deliberate human
+choices: desktop-first interaction, a plain-text fallback, no server, explicit
+activation by default, answer notes, explanation requests, and only one bounded
+layer of branching.
 
 ## Documentation
 
