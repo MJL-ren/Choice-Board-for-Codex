@@ -26,6 +26,7 @@ COMPACT_FIXTURE = ROOT / "tests" / "fixtures" / "board-ko.json"
 BRANCH_FIXTURE = ROOT / "tests" / "fixtures" / "board-ko-guided-branch-candidate.json"
 GUIDED_FIXTURE = ROOT / "tests" / "fixtures" / "board-ko-guided.json"
 COMPLETION_FIXTURE = ROOT / "tests" / "fixtures" / "board-ko-completion.json"
+NOTES_FIXTURE = ROOT / "tests" / "fixtures" / "board-ko-answer-notes.json"
 VALIDATOR_SCRIPT = SCRIPTS / "validate_envelope.py"
 
 
@@ -131,17 +132,157 @@ class EnvelopeValidationTests(unittest.TestCase):
         self.assertEqual(result["kind"], "choice_board_submission")
         self.assertEqual(result["submission_id"], "cb-test-001")
         self.assertEqual(result["active_question_ids"], ["route", "checks", "note"])
+        self.assertEqual(
+            result["presentation_integrity"],
+            {"status": "exact", "mismatches": []},
+        )
 
-    def test_summary_disagreement_fails_closed(self) -> None:
+    def test_question_label_drift_is_a_structured_warning(self) -> None:
         spec = load(COMPACT_FIXTURE)
         payload = self.compact_payload()
         message = returned_message(spec, payload).replace(
+            "이번 항목을 어떻게 처리할까요?",
+            "이번 항목은 어떻게 처리할까요?",
+            1,
+        )
+        result = validate_returned_message(spec, message)
+        self.assertEqual(result["payload"], payload)
+        self.assertEqual(
+            result["presentation_integrity"],
+            {
+                "status": "question_label_drift",
+                "mismatches": [
+                    {
+                        "kind": "question_label",
+                        "question_id": "route",
+                        "expected": "이번 항목을 어떻게 처리할까요?",
+                        "actual": "이번 항목은 어떻게 처리할까요?",
+                    }
+                ],
+            },
+        )
+
+    def test_branch_question_label_drift_preserves_active_path_validation(self) -> None:
+        spec = load(BRANCH_FIXTURE)
+        payload = self.branch_payload()
+        message = returned_message(spec, payload).replace(
+            "어느 정도로 자세히 정할까요?",
+            "어느 정도까지 자세히 정할까요?",
+            1,
+        )
+        result = validate_returned_message(spec, message)
+        self.assertEqual(result["active_question_ids"], ["depth", "note", "result"])
+        self.assertEqual(
+            result["presentation_integrity"]["status"],
+            "question_label_drift",
+        )
+
+    def test_answer_and_question_structure_disagreement_fail_closed(self) -> None:
+        spec = load(COMPACT_FIXTURE)
+        payload = self.compact_payload()
+        option_conflict = returned_message(spec, payload).replace(
             "이번 항목을 어떻게 처리할까요?: 담당 작업으로 전달",
             "이번 항목을 어떻게 처리할까요?: 지금 반영",
             1,
         )
         with self.assertRaisesRegex(EnvelopeError, "readable summary"):
+            validate_returned_message(spec, option_conflict)
+
+        text_conflict = returned_message(spec, payload).replace(
+            "덧붙일 내용이 있나요?: 작게 확인해요.",
+            "덧붙일 내용이 있나요?: 다른 내용",
+            1,
+        )
+        with self.assertRaisesRegex(EnvelopeError, "question_id=note"):
+            validate_returned_message(spec, text_conflict)
+
+        missing_question = returned_message(spec, payload).replace(
+            "- 함께 확인할 항목을 골라 주세요.: 범위, 근거\n",
+            "",
+            1,
+        )
+        with self.assertRaisesRegex(EnvelopeError, "readable summary"):
+            validate_returned_message(spec, missing_question)
+
+        first_line = "- 이번 항목을 어떻게 처리할까요?: 담당 작업으로 전달"
+        second_line = "- 함께 확인할 항목을 골라 주세요.: 범위, 근거"
+        reordered = returned_message(spec, payload).replace(
+            f"{first_line}\n{second_line}",
+            f"{second_line}\n{first_line}",
+            1,
+        )
+        with self.assertRaisesRegex(EnvelopeError, "readable summary"):
+            validate_returned_message(spec, reordered)
+
+        same_display_spec = load(COMPACT_FIXTURE)
+        same_display_spec["questions"][0]["label"] = "First question"
+        same_display_spec["questions"][1]["label"] = "Second question"
+        next(
+            option
+            for option in same_display_spec["questions"][0]["options"]
+            if option["value"] == "handoff"
+        )["label"] = "Same answer"
+        next(
+            option
+            for option in same_display_spec["questions"][1]["options"]
+            if option["value"] == "scope"
+        )["label"] = "Same answer"
+        same_display_payload = self.compact_payload()
+        same_display_payload["answers"]["checks"] = ["scope"]
+        same_display_message = returned_message(
+            same_display_spec,
+            same_display_payload,
+        ).replace(
+            "- First question: Same answer\n- Second question: Same answer",
+            "- Second question: Same answer\n- First question: Same answer",
+            1,
+        )
+        with self.assertRaisesRegex(EnvelopeError, "question_order_conflict"):
+            validate_returned_message(same_display_spec, same_display_message)
+
+        other_payload = self.compact_payload()
+        other_payload["answers"] = dict(other_payload["answers"], route="__other__")
+        other_payload["other_answers"] = {"route": "원래 방식"}
+        other_conflict = returned_message(spec, other_payload).replace(
+            "기타: 원래 방식",
+            "기타: 바뀐 방식",
+            1,
+        )
+        with self.assertRaisesRegex(EnvelopeError, "question_id=route"):
+            validate_returned_message(spec, other_conflict)
+
+    def test_answer_note_disagreement_fails_closed(self) -> None:
+        spec = load(NOTES_FIXTURE)
+        payload = {
+            "schema_version": 1,
+            "kind": "choice_board_submission",
+            "form_id": "answer-notes-compact-ko",
+            "answers": {
+                "direction": "simple",
+                "checks": ["scope"],
+            },
+            "other_answers": {},
+            "answer_notes": {
+                "direction": "기존 범위에서",
+            },
+            "submission_id": "cb-notes-001",
+        }
+        message = returned_message(spec, payload).replace(
+            "덧붙임: 기존 범위에서",
+            "덧붙임: 전혀 다른 범위로",
+            1,
+        )
+        with self.assertRaisesRegex(EnvelopeError, "readable summary"):
             validate_returned_message(spec, message)
+
+    def test_crlf_transport_normalization_stays_exact(self) -> None:
+        spec = load(COMPACT_FIXTURE)
+        payload = self.compact_payload()
+        result = validate_returned_message(
+            spec,
+            returned_message(spec, payload).replace("\n", "\r\n"),
+        )
+        self.assertEqual(result["presentation_integrity"]["status"], "exact")
 
     def test_branch_requires_missing_hidden_key_and_exact_neutral_type(self) -> None:
         spec = load(BRANCH_FIXTURE)
@@ -230,6 +371,19 @@ class EnvelopeValidationTests(unittest.TestCase):
             returned_message(raw_spec, payload),
         )
         self.assertEqual(result["kind"], "choice_board_explanation_request")
+        label_drift = returned_message(raw_spec, payload).replace(
+            "선호하는 설명 톤이 있나요?",
+            "원하는 설명 톤이 있나요?",
+        )
+        drift_result = validate_returned_message(raw_spec, label_drift)
+        self.assertEqual(
+            drift_result["presentation_integrity"]["status"],
+            "question_label_drift",
+        )
+        self.assertEqual(
+            drift_result["presentation_integrity"]["mismatches"][0]["question_id"],
+            "tone",
+        )
 
         payload["active_question_id"] = "finish"
         with self.assertRaisesRegex(EnvelopeError, "first deferred id"):
@@ -300,6 +454,47 @@ class EnvelopeValidationTests(unittest.TestCase):
             validated = json.loads(output_path.read_text(encoding="utf-8"))
         self.assertTrue(validated["duplicate"])
         self.assertEqual(validated["submission_id"], "cb-test-001")
+        self.assertEqual(validated["presentation_integrity"]["status"], "exact")
+
+    def test_cli_returns_zero_and_reports_question_label_drift(self) -> None:
+        spec = load(COMPACT_FIXTURE)
+        message = returned_message(spec, self.compact_payload()).replace(
+            "이번 항목을 어떻게 처리할까요?",
+            "이번 항목은 어떻게 처리할까요?",
+            1,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            spec_path = root / "canonical.json"
+            message_path = root / "returned.md"
+            output_path = root / "validated.json"
+            spec_path.write_text(
+                json.dumps(spec, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            message_path.write_text(message, encoding="utf-8")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(VALIDATOR_SCRIPT),
+                    "--spec",
+                    str(spec_path),
+                    "--message",
+                    str(message_path),
+                    "--output",
+                    str(output_path),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            validated = json.loads(output_path.read_text(encoding="utf-8"))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("presentation warning: question_label_drift", result.stdout)
+        self.assertEqual(
+            validated["presentation_integrity"]["status"],
+            "question_label_drift",
+        )
 
 
 if __name__ == "__main__":

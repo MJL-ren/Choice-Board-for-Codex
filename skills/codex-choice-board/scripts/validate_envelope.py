@@ -362,6 +362,89 @@ def _readable_summary(
     return "\n".join(lines)
 
 
+def _label_only_summary_drift(
+    spec: dict[str, Any],
+    expected_prefix: str,
+    message: str,
+) -> dict[str, Any]:
+    boundary = "\n\n---"
+    boundary_index = message.rfind(boundary)
+    if boundary_index < 0:
+        raise EnvelopeError("readable summary mismatch (missing summary boundary)")
+    actual_prefix = message[: boundary_index + len(boundary)]
+    expected_lines = expected_prefix.split("\n")
+    actual_lines = actual_prefix.split("\n")
+    if len(actual_lines) != len(expected_lines):
+        raise EnvelopeError(
+            "readable summary mismatch "
+            f"(question_structure_conflict, expected_lines={len(expected_lines)}, "
+            f"actual_lines={len(actual_lines)})"
+        )
+
+    mismatches: list[dict[str, str]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for index, (expected, actual) in enumerate(zip(expected_lines, actual_lines)):
+        if expected == actual:
+            continue
+        matching_questions = [
+            question
+            for question in spec["questions"]
+            if expected.startswith(f"- {question['label']}:")
+        ]
+        if len(matching_questions) != 1:
+            raise EnvelopeError(
+                "readable summary mismatch "
+                f"(summary_structure_conflict, line={index + 1})"
+            )
+        question = matching_questions[0]
+        expected_label = question["label"]
+        suffix = expected[len(f"- {expected_label}") :]
+        if not actual.startswith("- ") or not actual.endswith(suffix):
+            raise EnvelopeError(
+                "readable summary mismatch "
+                f"(answer_or_question_structure_conflict, line={index + 1}, "
+                f"question_id={question['id']})"
+            )
+        actual_label = actual[2 : len(actual) - len(suffix)]
+        if any(
+            other["id"] != question["id"] and other["label"] == actual_label
+            for other in spec["questions"]
+        ):
+            raise EnvelopeError(
+                "readable summary mismatch "
+                f"(question_order_conflict, line={index + 1}, "
+                f"question_id={question['id']})"
+            )
+        if (
+            not actual_label
+            or actual_label.count(":") != expected_label.count(":")
+        ):
+            raise EnvelopeError(
+                "readable summary mismatch "
+                f"(question_structure_conflict, line={index + 1}, "
+                f"question_id={question['id']})"
+            )
+        key = (question["id"], expected_label, actual_label)
+        if key in seen:
+            continue
+        seen.add(key)
+        mismatches.append(
+            {
+                "kind": "question_label",
+                "question_id": question["id"],
+                "expected": expected_label,
+                "actual": actual_label,
+            }
+        )
+
+    if not mismatches:
+        raise EnvelopeError("readable summary mismatch (unclassified)")
+    return {
+        "status": "question_label_drift",
+        "mismatches": mismatches,
+    }
+
+
 def _option_label(
     question: dict[str, Any],
     value: str,
@@ -387,7 +470,7 @@ def _validate_readable_summary(
     skipped: list[str],
     deferred: list[dict[str, str]],
     active_question_ids: list[str],
-) -> None:
+) -> dict[str, Any]:
     copy = _effective_copy(spec)
     readable = _readable_summary(
         spec,
@@ -419,8 +502,9 @@ def _validate_readable_summary(
                 f"{copy['draftHeading']}\n{readable}"
             )
     expected_prefix = f"{heading}\n\n{summary}\n\n---"
-    if not message.startswith(expected_prefix):
-        raise EnvelopeError("the readable summary does not match the canonical payload")
+    if message.startswith(expected_prefix):
+        return {"status": "exact", "mismatches": []}
+    return _label_only_summary_drift(spec, expected_prefix, message)
 
 
 def validate_payload(
@@ -603,7 +687,7 @@ def validate_payload(
         if question_id in other_answers or question_id in answer_notes:
             raise EnvelopeError(f"skipped question {question_id} must not have auxiliary state")
 
-    _validate_readable_summary(
+    presentation_integrity = _validate_readable_summary(
         message,
         spec,
         payload,
@@ -619,6 +703,7 @@ def validate_payload(
         "form_id": spec["form_id"],
         "submission_id": submission_id,
         "active_question_ids": active_question_ids,
+        "presentation_integrity": presentation_integrity,
         "payload": payload,
     }
 
@@ -712,9 +797,17 @@ def main() -> int:
         print(f"choice-board envelope validation failed: {error}", file=sys.stderr)
         return 2
     suffix = " (exact duplicate)" if duplicate else ""
+    presentation = result["presentation_integrity"]
+    warning = ""
+    if presentation["status"] != "exact":
+        warning = (
+            f" (presentation warning: {presentation['status']}, "
+            f"{len(presentation['mismatches'])} mismatch"
+            f"{'' if len(presentation['mismatches']) == 1 else 'es'})"
+        )
     print(
         f"validated choice-board envelope: {result['kind']} "
-        f"{result['submission_id'] or 'legacy-no-id'}{suffix}"
+        f"{result['submission_id'] or 'legacy-no-id'}{suffix}{warning}"
     )
     return 0
 

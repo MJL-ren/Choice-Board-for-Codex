@@ -1,6 +1,6 @@
 # Testing Status
 
-Last checked: 2026-07-18
+Last checked: 2026-07-26
 
 Live Codex Desktop findings and the current edge-path test plan are recorded in [`LIVE_TEST_FINDINGS_2026-07-16.md`](LIVE_TEST_FINDINGS_2026-07-16.md).
 
@@ -16,7 +16,7 @@ rechecked without repository authentication.
 ## Passed locally
 
 - Skill structure validation with the official skill validator.
-- Seventy-two public Python tests covering schema rejection, safe rendering,
+- Eighty-two public Python tests covering schema rejection, safe rendering,
   strict canonical loading, full returned-envelope validation, marker-safe
   labels, compact and guided initial-draft validation, answer-note opt-in and
   restored-state validation, explicit guided skip/deferred state, parent-linked
@@ -35,9 +35,12 @@ rechecked without repository authentication.
 - The executable returned-envelope validator checks exact marker and form
   identity, complete question-key sets, answer types and values, Other and note
   state, guided Skip/deferred state, flow identity, bounded branch paths,
-  completion parents, readable-summary parity, and duplicate/conflicting
-  submission IDs. Negative tests cover missing hidden keys and wrong neutral
-  types.
+  completion parents, readable-summary answer parity, and
+  duplicate/conflicting submission IDs. Exact summaries remain the fast path.
+  A question-label-only transcription drift returns a structured presentation
+  warning without rejecting the canonical payload; selected option text,
+  user-authored text, missing or reordered questions, and protocol conflicts
+  still fail closed.
 - CI runs the hash-pinned OpenAI skill validator on Ubuntu and a separate
   Windows renderer, callback, branch, and activation smoke job.
 - A read-only local retention check on 2026-07-18 found 21 Choice Board HTML
