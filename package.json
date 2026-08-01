@@ -12,6 +12,6 @@
     "test:browser": "python tests/run_browser_smoke.py"
   },
   "devDependencies": {
-    "playwright": "1.61.1"
+    "playwright": "1.62.0"
   }
 }
