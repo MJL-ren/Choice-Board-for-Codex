@@ -32,6 +32,8 @@ except ModuleNotFoundError:
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 SUBMISSION_ID_RE = re.compile(r"^cb-[A-Za-z0-9][A-Za-z0-9._-]{0,126}$")
 FLOW_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+INLINE_HTML_BASENAME_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*\.html$"
+INLINE_HTML_BASENAME_RE = re.compile(INLINE_HTML_BASENAME_PATTERN)
 QUESTION_TYPES = {"single", "multi", "text"}
 MAX_OPTIONS = 20
 MAX_FRAGMENT_BYTES = 2_000_000
@@ -123,6 +125,15 @@ GUIDED_QUESTION_BRANCH_FIELDS = {"branches", "next", "next_if"}
 
 class SpecError(ValueError):
     pass
+
+
+def validate_inline_html_basename(value: str) -> str:
+    if not INLINE_HTML_BASENAME_RE.fullmatch(value):
+        raise SpecError(
+            "inline visualization file basename must match "
+            f"{INLINE_HTML_BASENAME_PATTERN}"
+        )
+    return value
 
 
 def _strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -762,6 +773,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     try:
+        validate_inline_html_basename(args.output.name)
         raw = load_json_strict(args.spec.read_text(encoding="utf-8"))
         normalized = normalize_spec(raw)
         template = args.template.read_text(encoding="utf-8")

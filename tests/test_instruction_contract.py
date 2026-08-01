@@ -122,6 +122,9 @@ class InstructionContractTests(unittest.TestCase):
         self.assertLessEqual(word_count(ACTIVATION.read_text(encoding="utf-8")), 260)
         self.assertLessEqual(word_count(AUTHORING_DRAFT.read_text(encoding="utf-8")), 280)
         self.assertLessEqual(word_count(RESPONSE_HANDLING.read_text(encoding="utf-8")), 750)
+        self.assertIn(r"^[a-z0-9]+(?:-[a-z0-9]+)*\.html$", skill)
+        self.assertIn('::codex-inline-vis{file="lowercase-hyphenated-name.html"}', skill)
+        self.assertIn("-resume-01", skill)
 
 
 if __name__ == "__main__":

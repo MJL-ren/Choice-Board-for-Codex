@@ -1,6 +1,6 @@
 # Testing Status
 
-Last checked: 2026-07-26
+Last checked: 2026-08-01
 
 Live Codex Desktop findings and the current edge-path test plan are recorded in [`LIVE_TEST_FINDINGS_2026-07-16.md`](LIVE_TEST_FINDINGS_2026-07-16.md).
 
@@ -16,7 +16,7 @@ rechecked without repository authentication.
 ## Passed locally
 
 - Skill structure validation with the official skill validator.
-- Eighty-two public Python tests covering schema rejection, safe rendering,
+- Eighty-three public Python tests covering schema rejection, safe rendering,
   strict canonical loading, full returned-envelope validation, marker-safe
   labels, compact and guided initial-draft validation, answer-note opt-in and
   restored-state validation, explicit guided skip/deferred state, parent-linked
@@ -32,6 +32,10 @@ rechecked without repository authentication.
 - Direct canonical rendering now rejects duplicate JSON keys, non-finite
   numbers, and unknown top-level, question, and option fields instead of
   silently applying defaults.
+- Renderer output basenames now fail fast unless they match the Codex inline
+  visualization contract `^[a-z0-9]+(?:-[a-z0-9]+)*\.html$`. Regression cases
+  keep `board-resume-01.html` valid while rejecting extra dots, underscores,
+  uppercase letters, and directive path values.
 - The executable returned-envelope validator checks exact marker and form
   identity, complete question-key sets, answer types and values, Other and note
   state, guided Skip/deferred state, flow identity, bounded branch paths,

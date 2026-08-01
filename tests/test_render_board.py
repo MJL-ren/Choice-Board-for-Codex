@@ -25,6 +25,12 @@ GUIDED_ANSWER_NOTES_PREFILLED_FIXTURE = (
 )
 BRANCHING_FIXTURE = ROOT / "tests" / "fixtures" / "board-ko-guided-branch-candidate.json"
 
+sys.path.insert(0, str(SCRIPT.parent))
+try:
+    from render_board import SpecError, validate_inline_html_basename
+finally:
+    sys.path.pop(0)
+
 
 class RenderBoardTests(unittest.TestCase):
     def render(self, spec: Path, output: Path) -> subprocess.CompletedProcess[str]:
@@ -91,6 +97,31 @@ class RenderBoardTests(unittest.TestCase):
         self.assertEqual(normalized["initial_other_answers"], {})
         self.assertNotIn("presentation", normalized)
         self.assertNotIn("flow_digest", normalized)
+
+    def test_inline_visualization_basename_preflight_matches_host_contract(self) -> None:
+        self.assertEqual(
+            validate_inline_html_basename("board-resume-01.html"),
+            "board-resume-01.html",
+        )
+        for invalid in (
+            "board.resume-01.html",
+            "board_resume.html",
+            "Board.html",
+            "sub/board.html",
+            "board.html?retry=1",
+            "board.html#retry",
+            "C:\\board.html",
+        ):
+            with self.subTest(invalid=invalid):
+                with self.assertRaisesRegex(SpecError, "must match"):
+                    validate_inline_html_basename(invalid)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "board.resume-01.html"
+            result = self.render(FIXTURE, output)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("inline visualization file basename", result.stderr)
+            self.assertFalse(output.exists())
 
     def test_normalizes_valid_prefilled_draft(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

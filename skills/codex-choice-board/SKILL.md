@@ -39,12 +39,13 @@ Put the title in normal Markdown above the visualization. Do not repeat it insid
 ## Render
 
 Use unique names in the thread-scoped visualization directory.
+Choose one shared stem made only of lowercase ASCII letters and digits separated by single hyphens for Draft, canonical JSON, and HTML. The inline HTML basename must match `^[a-z0-9]+(?:-[a-z0-9]+)*\.html$`; use `-resume-01`, `-retry-01`, or `-completion-01`, never an extra dot, space, underscore, uppercase letter, path separator, query, fragment, or absolute path.
 
 1. For Draft, write `<name>.draft.json` and run `python scripts/compile_board_draft.py --draft <name>.draft.json --spec-output <name>.canonical.json`. Continue only on success. Correct one Draft error; after a second failure, use direct canonical authoring or fallback. Never reuse stale output.
 2. Otherwise write `<name>.canonical.json` directly. Canonical JSON is the sole rendering and callback authority.
-3. Run `python scripts/render_board.py --spec <name>.canonical.json --output <name>.html`.
+3. Run `python scripts/render_board.py --spec <name>.canonical.json --output <name>.html`; success includes the exact inline-filename preflight.
 4. Read the fragment back. Require no full-document tags or external request code, a response-unique root ID, and the intended question count and labels.
-5. Show it with the Visualize inline directive. Do not narrate Draft, compiler, renderer, schema, assets, or generated files.
+5. Immediately before responding, recheck the same basename and emit only `::codex-inline-vis{file="lowercase-hyphenated-name.html"}`. If it is invalid, emit no directive; render a new hyphen-named file in the current task's thread-scoped directory and recheck. Do not narrate Draft, compiler, renderer, schema, assets, or generated files.
 
 Thread visualization files may persist and restored boards may contain answer state. Never place sensitive data in them, promise automatic deletion, or delete files that may still back a visible, resumable, or retryable board. Use host-native controls and theme variables; do not add a manual theme switch.
 
